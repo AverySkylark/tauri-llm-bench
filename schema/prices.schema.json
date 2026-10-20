@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tauri-llm-bench/schema/prices.schema.json",
+  "title": "Price table (USD per 1M tokens)",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "retrieved", "models"],
+  "properties": {
+    "version": { "type": "string", "pattern": "^v\\d+$" },
+    "retrieved": { "type": "string", "format": "date" },
+    "models": {
+      "type": "object",
+      "minProperties": 1,
+      "propertyNames": { "not": { "pattern": "latest" } },
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "pin", "input", "cached_input", "output"],
+        "properties": {
+          "provider": { "enum": ["anthropic", "openai", "google"] },
+          "pin": { "enum": ["dated_snapshot", "fixed_id", "stable_code"] },
+          "input": { "$ref": "#/$defs/rate" },
+          "cached_input": { "$ref": "#/$defs/rate" },
+          "output": { "$ref": "#/$defs/rate" },
+          "long_context": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["threshold_tokens", "input", "cached_input", "output"],
+            "properties": {
+              "threshold_tokens": { "type": "integer", "minimum": 1 },
+              "input": { "$ref": "#/$defs/rate" },
+              "cached_input": { "$ref": "#/$defs/rate" },
+              "output": { "$ref": "#/$defs/rate" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "$defs": { "rate": { "type": "number", "minimum": 0 } }
+}

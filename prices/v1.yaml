@@ -1,0 +1,47 @@
+# Price table v1. USD per 1M tokens, standard (non-batch, non-priority) tier.
+# Never edit a published version: add prices/v2.yaml and point matrix.yaml at it.
+version: v1
+retrieved: 2026-10-21
+models:
+  # --- Anthropic. Source: claude-api skill model table (cached 2026-10-06) +
+  #     https://platform.claude.com/docs/en/about-claude/pricing
+  claude-haiku-5-5:
+    provider: anthropic
+    pin: fixed_id          # Anthropic: fixed ID, no date suffix, no alias
+    input: 0.10
+    cached_input: 0.01     # cache reads 0.1x input
+    output: 0.50
+    long_context:          # prompts over 100K tokens use a second rate card
+      threshold_tokens: 100000
+      input: 0.50
+      cached_input: 0.05
+      output: 2.50
+  claude-sonnet-5-5:
+    provider: anthropic
+    pin: fixed_id
+    input: 2.00
+    cached_input: 0.20
+    output: 10.00
+  claude-opus-5-5:
+    provider: anthropic
+    pin: fixed_id
+    input: 4.00
+    cached_input: 0.20
+    output: 20.00
+
+  # --- OpenAI. Source: https://developers.openai.com/api/docs/pricing (2026-10-21)
+  gpt-5.4-mini-2026-03-17:
+    provider: openai
+    pin: dated_snapshot
+    input: 0.75
+    cached_input: 0.075
+    output: 4.50
+
+  # --- Google. Source: https://ai.google.dev/gemini-api/docs/pricing (2026-10-21)
+  #     Output price includes thinking tokens.
+  gemini-3.5-flash-lite:
+    provider: google
+    pin: stable_code       # Google publishes no dated snapshot for this model
+    input: 0.30
+    cached_input: 0.03
+    output: 2.50
