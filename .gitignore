@@ -1,0 +1,6 @@
+node_modules/
+target/
+/hidden/plain/
+.env
+*.log
+/.bench-work/
