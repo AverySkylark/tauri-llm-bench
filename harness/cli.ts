@@ -7,17 +7,34 @@ import { availableProviders, createAdapter, KEY_ENV } from '../adapters/index.ts
 import { loadMatrix } from './matrix.ts';
 import { repoPath } from './paths.ts';
 import { costUsd, priceFor } from './prices.ts';
+import { decrypt, encrypt, keygen } from './hidden.ts';
+import { listTasks } from './tasks.ts';
+import { prepare, verifyTask } from './verify.ts';
 
 const USAGE = `Usage:
   bench matrix [--matrix matrix/matrix.yaml]     Validate the matrix and list expanded pairs
-  bench adapters --dry-run [--matrix ...]        Send one fake request per pair through each adapter (no network)`;
+  bench adapters --dry-run [--matrix ...]        Send one fake request per pair through each adapter (no network)
+  bench tasks list                               List tasks
+  bench tasks prepare                            Generate Cargo.lock, fetch crates, warm the shared target dir
+  bench tasks verify [--task A]                  Scaffold must fail gates; reference must pass gates and hidden tests
+  bench hidden keygen|encrypt|decrypt            Manage the encrypted hidden-test bundle`;
 
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
   const { values } = parseArgs({
     args: rest,
-    options: { matrix: { type: 'string', default: repoPath('matrix', 'matrix.yaml') }, 'dry-run': { type: 'boolean', default: false } },
+    allowPositionals: true,
+    options: {
+      matrix: { type: 'string', default: repoPath('matrix', 'matrix.yaml') },
+      'dry-run': { type: 'boolean', default: false },
+      task: { type: 'string' },
+    },
   });
+  const sub = rest.find((a) => !a.startsWith('-'));
+
+  if (cmd === 'tasks') return tasksCommand(sub, values.task);
+  if (cmd === 'hidden') return hiddenCommand(sub);
+
   const loaded = loadMatrix(values.matrix);
 
   if (cmd === 'matrix') {
@@ -57,6 +74,51 @@ async function main(argv: string[]): Promise<number> {
 
   console.log(USAGE);
   return cmd ? 2 : 0;
+}
+
+async function tasksCommand(sub: string | undefined, only: string | undefined): Promise<number> {
+  const log = (m: string) => console.log(m);
+  if (sub === 'list') {
+    for (const t of listTasks()) console.log(`  ${t.id}  ${t.class}  ${t.kind.padEnd(11)} ${t.title}`);
+    return 0;
+  }
+  if (sub === 'prepare') {
+    await prepare(log);
+    return 0;
+  }
+  if (sub === 'verify') {
+    const tasks = listTasks().filter((t) => !only || t.id === only);
+    let failed = 0;
+    for (const t of tasks) {
+      const v = await verifyTask(t, log);
+      const gates = (r: Record<string, { ok: boolean; ms: number }>) =>
+        Object.entries(r).map(([n, g]) => `${n}:${g.ok ? 'pass' : 'FAIL'}(${(g.ms / 1000).toFixed(1)}s)`).join(' ');
+      console.log(`
+${t.id} ${v.ok ? 'OK' : 'PROBLEMS'}`);
+      console.log(`  scaffold  gates  ${gates(v.scaffoldGates)}`);
+      console.log(`  scaffold  hidden ${v.scaffoldHidden.passed}/${v.scaffoldHidden.total}`);
+      console.log(`  reference gates  ${gates(v.referenceGates)}`);
+      console.log(`  reference hidden ${v.referenceHidden.passed}/${v.referenceHidden.total} (rust ${v.referenceHidden.rust}, vitest ${v.referenceHidden.vitest})`);
+      for (const p of v.problems) console.log(`  ! ${p}`);
+      if (!v.ok) failed++;
+    }
+    return failed ? 1 : 0;
+  }
+  console.log(USAGE);
+  return 2;
+}
+
+function hiddenCommand(sub: string | undefined): number {
+  if (sub === 'keygen') console.log(`Key written to ${keygen()}. Back it up and add it as the BENCH_HIDDEN_KEY secret in CI.`);
+  else if (sub === 'encrypt') {
+    const r = encrypt();
+    console.log(`hidden/tasks.enc: ${r.files} files, ${r.bytes} bytes`);
+  } else if (sub === 'decrypt') console.log(`Decrypted ${decrypt()} files into hidden/plain/`);
+  else {
+    console.log(USAGE);
+    return 2;
+  }
+  return 0;
 }
 
 main(process.argv.slice(2)).then(

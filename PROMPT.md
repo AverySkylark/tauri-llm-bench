@@ -1,7 +1,8 @@
 You are building and then running the benchmark harness specified in SPEC.md in this folder (Windows, repo root = current directory). Read SPEC.md fully before doing anything.
 
 Rules:
-- Work in phases. At the end of EACH phase: commit to Git, print a short summary, and STOP for my approval. Do not start the next phase until I say "go".
+- Work in phases. At the end of EACH phase: update STATUS.md (phase completed, decisions made, open questions, exact next step), commit to Git, print a short summary, and STOP for my approval. Do not start the next phase until I say "go".
+- On session start: if STATUS.md exists, read it and resume from the recorded next step instead of starting at Phase 0.
 - Push back on any requirement in SPEC.md that is flawed or unmeasurable before building it.
 - Before each phase print: `[Tier] Class: Cx | Recommended: <model>/<effort> | Current fit: OK/Under/Over`.
 - Never spend API money without my explicit go-ahead and a dollar ceiling I confirm.

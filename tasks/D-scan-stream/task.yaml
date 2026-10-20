@@ -1,0 +1,14 @@
+id: D
+title: Scan archive - binary streaming over a Channel, path hardening, least-privilege capability
+class: C4
+kind: systems
+editable:
+  - src-tauri/src/**
+  - src-tauri/capabilities/archive.json
+  - src/**
+readonly:
+  - src/__tests__/**
+gates: [cargo_check, cargo_test, tsc, eslint, vitest]
+hidden:
+  rust_tests: [hidden]
+  vitest_dir: src/__hidden__

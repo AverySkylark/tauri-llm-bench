@@ -1,0 +1,15 @@
+id: A
+title: Seed vault - Tauri commands bridging Rust state to a typed React component
+class: C2
+kind: greenfield
+# Paths the model may create or replace. Everything else in the working copy is read-only;
+# edits outside this list are rejected and recorded.
+editable:
+  - src-tauri/src/**
+  - src/**
+readonly:
+  - src/__tests__/**
+gates: [cargo_check, cargo_test, tsc, eslint, vitest]
+hidden:
+  rust_tests: [hidden]          # src-tauri/tests/hidden.rs
+  vitest_dir: src/__hidden__

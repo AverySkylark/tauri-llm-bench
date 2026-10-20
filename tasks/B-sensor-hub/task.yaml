@@ -1,0 +1,13 @@
+id: B
+title: Sensor hub - async Send error, listener deadlock and panic, React listener leaks
+class: C3
+kind: debugging
+editable:
+  - src-tauri/src/**
+  - src/**
+readonly:
+  - src/__tests__/**
+gates: [cargo_check, cargo_test, tsc, eslint, vitest]
+hidden:
+  rust_tests: [hidden]
+  vitest_dir: src/__hidden__

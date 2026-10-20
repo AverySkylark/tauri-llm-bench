@@ -1,6 +1,6 @@
 # Benchmark matrix. Bump `version` on any change; the run record stores a hash of this file's content.
 version: 1
-suite_version: 0.0.0          # no tasks yet (Phase 2)
+suite_version: 1.0.0
 price_table: v1
 defaults:
   reps: 3
