@@ -1,4 +1,28 @@
+import { request as httpRequest } from 'node:http';
+import { request as httpsRequest } from 'node:https';
 import { AdapterError, type Transport } from './types.ts';
+
+// Real transport for live calls. Not global fetch: its HTTP client gives up waiting for response
+// headers after 300 s, and a non-streaming reply sends no headers until the whole answer is
+// generated. That surfaces as a network error, which would be retried and billed again.
+// node:http has no such limit; the only deadline is the caller's AbortSignal.
+export const nodeTransport: Transport = (url, init) =>
+  new Promise((resolve, reject) => {
+    const u = new URL(url);
+    const send = u.protocol === 'http:' ? httpRequest : httpsRequest;
+    const req = send(
+      u,
+      { method: init.method ?? 'GET', headers: init.headers as Record<string, string>, signal: init.signal ?? undefined },
+      (res) => {
+        const chunks: Buffer[] = [];
+        res.on('data', (c: Buffer) => chunks.push(c));
+        res.on('end', () => resolve(new Response(Buffer.concat(chunks), { status: res.statusCode ?? 0 })));
+        res.on('error', reject);
+      },
+    );
+    req.on('error', reject);
+    req.end(typeof init.body === 'string' ? init.body : undefined);
+  });
 
 export async function postJson(
   transport: Transport,

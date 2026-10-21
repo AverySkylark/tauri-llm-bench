@@ -170,12 +170,12 @@ function pairTable(pairs: PairStats[]): string {
     .filter((p) => !p.unsupported)
     .map(
       (p) =>
-        `<tr><td><code>${esc(p.key)}</code></td><td>${esc(p.provider)}</td><td>${esc(p.nativeEffort ?? '')}</td><td class="n">${p.n}</td><td class="n">${pct(p.passRate)}</td><td class="n">${pct(p.passWilsonLower)}</td>` +
+        `<tr><td><code>${esc(p.key)}</code></td><td>${esc(p.provider)}</td><td>${esc(p.nativeEffort ?? '')}</td><td class="n">${p.caps.map((c) => `${Math.round(c / 1000)}k`).join(', ')}</td><td class="n">${p.n}</td><td class="n">${pct(p.passRate)}</td><td class="n">${pct(p.passWilsonLower)}</td>` +
         `<td class="n">${p.firstPassCompile === null ? 'n/a' : pct(p.firstPassCompile)}</td><td class="n">${f2(p.Q)}</td><td class="n">${usd(p.C)}</td><td class="n">${f2(p.T)}</td>` +
         `<td class="n">${p.VI === null ? 'n/a' : Math.round(p.VI).toLocaleString('en-US')}</td><td class="n">${p.VIt === null ? 'n/a' : f2(p.VIt)}</td><td>${p.pareto ? 'yes' : ''}</td><td>${p.meetsBar ? 'yes' : 'no'}</td></tr>`,
     )
     .join('');
-  return `<table><thead><tr><th>Pair</th><th>Provider</th><th>Native effort</th><th>n</th><th>Pass</th><th>Wilson lo</th><th>1st-pass compile</th><th>Q</th><th>$ / attempt</th><th>min</th><th>VI</th><th>VI_t</th><th>Pareto</th><th>Meets bar</th></tr></thead><tbody>${rows}</tbody></table>`;
+  return `<table><thead><tr><th>Pair</th><th>Provider</th><th>Native effort</th><th>Output cap</th><th>n</th><th>Pass</th><th>Wilson lo</th><th>1st-pass compile</th><th>Q</th><th>$ / attempt</th><th>min</th><th>VI</th><th>VI_t</th><th>Pareto</th><th>Meets bar</th></tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function taskTable(pairs: PairStats[]): string {

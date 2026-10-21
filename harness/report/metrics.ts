@@ -28,6 +28,7 @@ export interface PairStats {
   model: string;
   effort: Effort;
   nativeEffort: string | null;
+  caps: number[];
   n: number;
   unsupported: boolean;
   passes: number;
@@ -51,6 +52,20 @@ export interface PairStats {
 }
 
 export const pairKey = (model: string, effort: string) => `${model}@${effort}`;
+
+// Report row key. A model@effort whose attempts ran under different output caps (e.g. before and
+// after matrix v2) is split into one row per cap, labelled model@effort/16k, so settings never mix.
+export function rowKeyFn(attempts: AttemptRecord[]): (a: AttemptRecord) => string {
+  const caps = new Map<string, Set<number>>();
+  for (const a of attempts) {
+    const k = pairKey(a.pair.model, a.pair.effort_norm);
+    caps.set(k, (caps.get(k) ?? new Set()).add(a.pair.max_output_tokens));
+  }
+  return (a) => {
+    const k = pairKey(a.pair.model, a.pair.effort_norm);
+    return caps.get(k)!.size > 1 ? `${k}/${Math.round(a.pair.max_output_tokens / 1000)}k` : k;
+  };
+}
 
 // Quality score of one attempt: hidden-test fraction when the final code compiled, otherwise 0.
 // Capped, refused and errored attempts score 0 but keep their full cost (PLAN §6).
@@ -87,8 +102,9 @@ export function taskStats(as: AttemptRecord[]): TaskStats {
 
 export function aggregate(attempts: AttemptRecord[], th: Thresholds): PairStats[] {
   const groups = new Map<string, AttemptRecord[]>();
+  const rowKey = rowKeyFn(attempts);
   for (const a of attempts) {
-    const k = pairKey(a.pair.model, a.pair.effort_norm);
+    const k = rowKey(a);
     groups.set(k, [...(groups.get(k) ?? []), a]);
   }
 
@@ -113,6 +129,7 @@ export function aggregate(attempts: AttemptRecord[], th: Thresholds): PairStats[
       model: first.pair.model,
       effort: first.pair.effort_norm,
       nativeEffort: scored[0]?.pair.effort_native ? `${scored[0].pair.effort_native.param}=${scored[0].pair.effort_native.value}` : null,
+      caps: [...new Set(all.map((a) => a.pair.max_output_tokens))].sort((a, b) => a - b),
       n,
       unsupported: n === 0,
       passes,
@@ -163,7 +180,8 @@ export function flagEfforts(pairs: PairStats[]): void {
     for (let i = 1; i < list.length; i++) {
       const lo = list[i - 1]!;
       const hi = list[i]!;
-      if (hi.C <= lo.C) continue;
+      // Rows split by output cap share an effort; only compare across effort levels.
+      if (hi.C <= lo.C || hi.effort === lo.effort) continue;
       if (hi.n < MIN_REPS_FOR_SIGNIFICANCE || lo.n < MIN_REPS_FOR_SIGNIFICANCE) {
         hi.effortFlag = `costs more than @${lo.effort}; too few attempts to test the gain`;
         continue;
@@ -200,8 +218,9 @@ export function routing(attempts: AttemptRecord[], th: Thresholds): RouteRow[] {
   return classes.map((cls) => {
     const inClass = attempts.filter((a) => a.task.class === cls && a.status !== 'unsupported');
     const byPair = new Map<string, AttemptRecord[]>();
+    const rowKey = rowKeyFn(attempts);
     for (const a of inClass) {
-      const k = pairKey(a.pair.model, a.pair.effort_norm);
+      const k = rowKey(a);
       byPair.set(k, [...(byPair.get(k) ?? []), a]);
     }
     const rows = [...byPair].map(([key, as]) => {

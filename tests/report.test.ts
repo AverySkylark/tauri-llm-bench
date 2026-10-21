@@ -7,7 +7,7 @@ import { reportDiff, significance } from '../harness/report/diff.ts';
 import { deepDiveHtml } from '../harness/report/html.ts';
 import { buildContext } from '../harness/report/index.ts';
 import { leaderboardMarkdown, readmeBlock, updateReadme } from '../harness/report/markdown.ts';
-import { aggregate, attemptScore, markPareto, passesNeeded, routing, type PairStats, type Thresholds } from '../harness/report/metrics.ts';
+import { aggregate, attemptScore, markPareto, passesNeeded, routing, rowKeyFn, type PairStats, type Thresholds } from '../harness/report/metrics.ts';
 import { bootstrapDiff, passAtK, wilsonLower } from '../harness/report/stats.ts';
 import { fixtureAttempt, FIXTURE_PAIRS, writeFixtureRun } from './report-fixtures.ts';
 import { rng } from '../harness/report/stats.ts';
@@ -150,5 +150,26 @@ describe('aggregate over fixture data', () => {
     expect(once).toContain('after');
     expect(once).not.toContain('old');
     expect(updateReadme(once, block)).toBe(once);
+  });
+});
+
+describe('rows split by output cap', () => {
+  const r = rng(3);
+  const t = { id: 'A', class: 'C2' as const, difficulty: 0 };
+  const hi = FIXTURE_PAIRS[1]!;
+  const lo = FIXTURE_PAIRS[0]!;
+  const mk = (p: typeof hi, i: number, cap: number) => {
+    const a = fixtureAttempt('2026-10-21T00-00-00Z_000000', i, p, t, i, r);
+    a.pair.max_output_tokens = cap;
+    return a;
+  };
+
+  it('labels a model@effort by cap only when its attempts used more than one', () => {
+    const as = [mk(hi, 0, 16000), mk(hi, 1, 32000), mk(lo, 2, 16000)];
+    const key = rowKeyFn(as);
+    expect(as.map(key)).toEqual(['claude-haiku-5-5@high/16k', 'claude-haiku-5-5@high/32k', 'claude-haiku-5-5@low']);
+    const rows = aggregate(as, th).map((p) => p.key).sort();
+    expect(rows).toEqual(['claude-haiku-5-5@high/16k', 'claude-haiku-5-5@high/32k', 'claude-haiku-5-5@low']);
+    expect(reportDiff(as, 'claude-haiku-5-5@high/16k', 'claude-haiku-5-5@high/32k', [])).toContain('| **all tasks** | 1 / 1 |');
   });
 });

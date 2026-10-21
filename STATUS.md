@@ -61,8 +61,7 @@ Full log in `docs/DECISIONS.md`. Key ones:
 3. Back up `~/.tauri-llm-bench/hidden.key`.
 4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
-6. **Mixed caps in `haiku@high`.** Its 4 recorded attempts ran with a 16k cap; new ones run with 32k (matrix v2). Reports group by model@effort, so they will mix unless the owner wants pairs split by cap, or those 4 attempts left out of rankings.
-7. **Long requests may hit Node's 300 s header timeout.** Non-streaming `fetch` waits for the whole reply before headers arrive; undici's default `headersTimeout` is 300 s, below the 600 s attempt timeout. Such a failure looks like a network error and would be retried (and billed) up to 3 more times. Fine for Haiku (about 2 min at 32k); fix before the full sweep (raise undici timeouts, or stream).
+6. Resolved: the 300 s fetch header timeout (now `node:https`), and mixed caps (split rows, option b).
 
 ## Next step
 

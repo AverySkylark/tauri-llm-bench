@@ -402,6 +402,8 @@ describe('run planning and storage', () => {
 
     const done = recordedKeys(out, loaded.matrix.suite_version, true);
     expect(done.has(pairKey(pairs[0]!, 'A', 0))).toBe(true);
+    // A different output cap is a different configuration: not done yet.
+    expect(done.has(pairKey({ ...pairs[0]!, maxOutputTokens: pairs[0]!.maxOutputTokens + 1 }, 'A', 0))).toBe(false);
     expect(recordedKeys(out, loaded.matrix.suite_version, false).size).toBe(0);
 
     const r2 = await runBench({ ...opts, mode: 'only_new', reps: 2 });

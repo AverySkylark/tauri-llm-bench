@@ -1,7 +1,7 @@
 // OpenAI Responses API (POST /v1/responses), raw HTTP. store:false so no server-side state.
 
 import { mapEffort, mergeBody } from './effort.ts';
-import { num, postJson } from './http.ts';
+import { num, postJson, nodeTransport } from './http.ts';
 import { AdapterError, type Adapter, type ChatRequest, type ChatResponse, type StopReason, type Transport } from './types.ts';
 
 const URL = 'https://api.openai.com/v1/responses';
@@ -64,7 +64,7 @@ export function parseOpenAI(json: unknown): Omit<ChatResponse, 'latencyMs' | 'ef
   };
 }
 
-export function openaiAdapter(apiKey: string, transport: Transport = fetch): Adapter {
+export function openaiAdapter(apiKey: string, transport: Transport = nodeTransport): Adapter {
   return {
     provider: 'openai',
     async chat(req) {

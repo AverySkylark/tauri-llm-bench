@@ -69,14 +69,14 @@ function notes(p: PairStats, th: Thresholds): string {
 
 export function leaderboardTable(pairs: PairStats[], th: Thresholds, limit = Infinity): string[] {
   const rows = [
-    '| # | Pair | Provider | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |',
-    '|---|---|---|---|---|---|---|---|---|---|---|---|',
+    '| # | Pair | Provider | Output cap | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |',
+    '|---|---|---|---|---|---|---|---|---|---|---|---|---|',
   ];
   let rank = 0;
   for (const p of pairs.filter((x) => !x.unsupported).slice(0, limit)) {
     rank++;
     rows.push(
-      `| ${p.meetsBar ? rank : '–'} | \`${p.key}\` | ${p.provider} | ${p.n} | ${pct(p.passRate)} (${pct(p.passWilsonLower)}) | ${p.firstPassCompile === null ? 'n/a' : pct(p.firstPassCompile)} | ` +
+      `| ${p.meetsBar ? rank : '–'} | \`${p.key}\` | ${p.provider} | ${p.caps.map((c) => `${Math.round(c / 1000)}k`).join(', ')} | ${p.n} | ${pct(p.passRate)} (${pct(p.passWilsonLower)}) | ${p.firstPassCompile === null ? 'n/a' : pct(p.firstPassCompile)} | ` +
         `${p.Q.toFixed(2)} | ${usd(p.C)} | ${p.T.toFixed(2)} | ${p.VI === null ? 'n/a' : num(p.VI, 0)} | ${p.VIt === null ? 'n/a' : num(p.VIt, 2)} | ${notes(p, th)} |`,
     );
   }

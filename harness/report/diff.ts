@@ -2,7 +2,7 @@
 // significance note derived from the spread across reps.
 
 import type { AttemptRecord } from '../orchestrator/attempt.ts';
-import { attemptScore, MIN_REPS_FOR_SIGNIFICANCE, pairKey } from './metrics.ts';
+import { attemptScore, MIN_REPS_FOR_SIGNIFICANCE, rowKeyFn } from './metrics.ts';
 import { bootstrapDiff, mean } from './stats.ts';
 
 interface Side {
@@ -38,11 +38,12 @@ export function significance(base: number[], target: number[]): string {
 }
 
 export function reportDiff(attempts: AttemptRecord[], baseKey: string, targetKey: string, banner: string[]): string {
-  const pick = (k: string) => attempts.filter((a) => pairKey(a.pair.model, a.pair.effort_norm) === k);
+  const rowKey = rowKeyFn(attempts);
+  const pick = (k: string) => attempts.filter((a) => rowKey(a) === k);
   const base = pick(baseKey);
   const target = pick(targetKey);
   for (const [k, as] of [[baseKey, base], [targetKey, target]] as const) {
-    if (as.length === 0) throw new Error(`No attempts for ${k}. Pairs with data: ${[...new Set(attempts.map((a) => pairKey(a.pair.model, a.pair.effort_norm)))].join(', ') || 'none'}`);
+    if (as.length === 0) throw new Error(`No attempts for ${k}. Pairs with data: ${[...new Set(attempts.map(rowKey))].join(', ') || 'none'}`);
   }
 
   const rows: string[] = [];

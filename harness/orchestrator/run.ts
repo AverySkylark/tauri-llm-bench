@@ -65,8 +65,9 @@ export function makeRunId(d: Date): string {
   return `${d.toISOString().slice(0, 19).replace(/:/g, '-')}Z_${randomBytes(3).toString('hex')}`;
 }
 
-export function pairKey(p: { provider: string; model: string; effort: string }, task: string, rep: number): string {
-  return `${p.provider}/${p.model}/${p.effort}/${task}/${rep}`;
+// The output cap is part of the identity: an attempt under a different cap is not "done".
+export function pairKey(p: { provider: string; model: string; effort: string; maxOutputTokens: number }, task: string, rep: number): string {
+  return `${p.provider}/${p.model}/${p.effort}/${p.maxOutputTokens}/${task}/${rep}`;
 }
 
 export function buildPlan(pairs: Pair[], tasks: Task[], reps: number): PlanItem[] {
@@ -89,12 +90,12 @@ export function recordedKeys(outDir: string, suiteVersion: string, dryRun: boole
       const r = JSON.parse(line) as {
         record: string;
         dry_run?: boolean;
-        pair?: { provider: string; model: string; effort_norm: string };
+        pair?: { provider: string; model: string; effort_norm: string; max_output_tokens: number };
         task?: { id: string; rep_index: number };
       };
       if (r.record === 'run') isDry = r.dry_run ?? false;
       else if (r.record === 'attempt' && isDry === dryRun && r.pair && r.task) {
-        keys.add(pairKey({ provider: r.pair.provider, model: r.pair.model, effort: r.pair.effort_norm }, r.task.id, r.task.rep_index));
+        keys.add(pairKey({ provider: r.pair.provider, model: r.pair.model, effort: r.pair.effort_norm, maxOutputTokens: r.pair.max_output_tokens }, r.task.id, r.task.rep_index));
       }
     }
   }
