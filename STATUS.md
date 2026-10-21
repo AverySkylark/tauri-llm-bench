@@ -15,7 +15,7 @@ Updated 2026-10-22, end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval
 | 6 CI, Pages, RUNBOOK | done locally, **awaiting approval**; workflows not yet run (no remote) | `phase-6-ci` |
 | 7 Full sweep | not started | |
 
-Branches are stacked (each phase branches from the previous one). No remote exists yet, so nothing is merged to `main` and no PRs are open.
+Branches are stacked (each phase branches from the previous one). Remote: https://github.com/AverySkylark/tauri-llm-bench (public). Stacked PRs #3–#10 are open (phase 0 → main, each later one on the previous branch); merge in order. Head branches are deleted on merge, so each next PR retargets automatically. Bug issues: #1 (300 s header timeout, fixed in #10), #2 (gate env leak, fixed on `phase-6-ci`).
 
 ## Phase 4 result (live smoke)
 
@@ -90,11 +90,10 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Next step
 
-After the owner says "go" and answers question 4:
-1. Create the GitHub repo, push `main` and the stacked phase branches, and open PRs (or merge, if the owner prefers). File the gate-env bug as an issue (`bug`) and close it with `fbb2d1d`'s PR.
-2. Owner adds secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`) and sets Pages' source to GitHub Actions.
-3. Watch the first `ci.yml` and `pages.yml` runs and fix what breaks. Measure CI setup time cold and warm, and add it to RUNBOOK §3.
-4. Then Phase 7 (full sweep) only when the owner says so, with their ceiling. The paused `haiku@high` 32k rerun is covered by `--only-new`.
+1. **Blocked on the owner:** the `gh` token lacks the `workflow` scope, so `phase-6-ci` (which adds `.github/workflows/`) was rejected. Owner runs `gh auth refresh -h github.com -s workflow`. Then push `phase-6-ci` (HTTPS with `gh` as credential helper; the SSH host key isn't set up in Claude Code's shell) and open its PR on base `cap-32k-high-effort` with "Fixes #2".
+2. Owner adds secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`), sets Pages source to GitHub Actions, and merges PRs #3 onwards in order.
+3. Watch the first `ci.yml` and `pages.yml` runs and fix what breaks. Measure CI setup time cold and warm; add it to RUNBOOK §3.
+4. Phase 7 (full sweep) only when the owner says so, with their ceiling. The paused `haiku@high` 32k rerun is covered by `--only-new`.
 
 ## How to resume
 
