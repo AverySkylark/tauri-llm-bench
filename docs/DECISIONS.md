@@ -123,3 +123,7 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Hidden-test leak: accepted and watched, not fixed.** Owner's choice ("Accept and watch"), 2026-10-22. Decrypted hidden tests stay in `hidden/plain/` during runs; gate code could read them and leak them into retry feedback. Alternative: decrypt only after the last turn. Owner chose to watch run files for hidden-test content in `output_tail` instead (RUNBOOK §4).
 
 **Repo is public on GitHub as `tauri-llm-bench`.** Owner's choice. Why: free-account Pages needs a public repo. Hidden tests stay encrypted in `hidden/tasks.enc`. History was checked for keys and personal paths before the first push.
+
+## 2026-10-22 — CI without secrets
+
+**`verify-tasks` in `ci.yml` skips its steps (job green, with a warning) while `BENCH_HIDDEN_KEY` is unset.** Owner's choice, because the failure emails from PR #11 were noise until the secret is added. Alternative: leave it red as a reminder. Scope is `ci.yml` only; `sweep.yml` and `pages.yml` still fail loudly, since a silent skip there would hide a missing key before a paid run. Cost: a green check on a PR without the secret means the Linux gate path was not exercised (the warning says so). Secrets can't be read in a job-level `if`, so the job copies a boolean into `env.HAVE_KEY` and each step checks it.
