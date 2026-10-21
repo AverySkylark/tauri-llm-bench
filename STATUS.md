@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-22 (sweep estimate redone for matrix v3), end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval, and an answer to open question 4 before anything is pushed.
+Updated 2026-10-22. Phase 6 approved by the owner ("go"). Phase 7 waits for the owner's go-ahead and dollar ceiling.
 
 ## Phases
 
@@ -12,7 +12,7 @@ Updated 2026-10-22 (sweep estimate redone for matrix v3), end of Phase 6 (CI, Pa
 | 3 Orchestrator (`bench run`) | done | `phase-3-orchestrator` |
 | 4 Live smoke (1 model, task A, N=1, ≤ $1) | done | `phase-4-smoke` |
 | 5 Reports | done (approved with "go") | `phase-5-reports`, then `mini-sweep-haiku`, `cap-32k-high-effort` |
-| 6 CI, Pages, RUNBOOK | done locally, **awaiting approval**; workflows not yet run (no remote) | `phase-6-ci` |
+| 6 CI, Pages, RUNBOOK | done (approved with "go"); CI green on PR #11, but `verify-tasks` and Pages untested until secrets are set | `phase-6-ci` |
 | 7 Full sweep | not started | |
 
 Branches are stacked (each phase branches from the previous one). Remote: https://github.com/AverySkylark/tauri-llm-bench (public). Stacked PRs #3–#10 are open (phase 0 → main, each later one on the previous branch); merge in order. Head branches are deleted on merge, so each next PR retargets automatically. Phase 6 is PR #11 (base `cap-32k-high-effort`). Bug issues: #1 (300 s header timeout, fixed in #10), #2 (gate env leak, fixed in #11), #12 (unit tests needed the real hidden tests, fixed in #11).
