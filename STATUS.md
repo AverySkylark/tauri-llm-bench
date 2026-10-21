@@ -39,6 +39,10 @@ Branches are stacked (each phase branches from the previous one). No remote exis
 - Rebuilding from the same data gives byte-identical files.
 - 84 unit tests pass (14 new for reports).
 
+## Mini-sweep (owner-approved, ceiling $0.50)
+
+Run `2026-10-21T01-06-01Z_59ad6d`: Claude Haiku 5.5 at low and high effort × tasks A–D × 1 rep, with `--only-new` (A@low came from the smoke run). Gemini skipped at the owner's request. 7 attempts, $0.0427: 6 passed, and C@high was `capped_tokens` (16,000-token cap hit while thinking). Reports rebuilt from 8 live attempts. `haiku@low` is the first pair ranked; `haiku@high` is flagged "no measurable gain" at 1.7× the cost.
+
 ## Decisions made
 
 Full log in `docs/DECISIONS.md`. Key ones:
@@ -57,6 +61,7 @@ Full log in `docs/DECISIONS.md`. Key ones:
 3. Back up `~/.tauri-llm-bench/hidden.key`.
 4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
+6. **Output-token cap vs effort.** Anthropic counts thinking tokens against `max_output_tokens` (16,000). At high effort, Haiku hit it on task C, so high effort can be penalised for thinking, not for worse code. Option: raise the cap for high and max effort (e.g. 32,000) with a matrix version bump before the full sweep.
 
 ## Next step
 

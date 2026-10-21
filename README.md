@@ -9,15 +9,16 @@ An independent, repeatable benchmark of LLM model × reasoning-effort pairs on e
 ## Leaderboard
 
 <!-- leaderboard:start -->
-![suite: 1.0.0](https://img.shields.io/badge/suite-1.0.0-blue) ![attempts: 1](https://img.shields.io/badge/attempts-1-blue) ![best value: none yet](https://img.shields.io/badge/best%20value-none%20yet-lightgrey)
+![suite: 1.0.0](https://img.shields.io/badge/suite-1.0.0-blue) ![attempts: 8](https://img.shields.io/badge/attempts-8-blue) ![best value: claude-haiku-5-5@low](https://img.shields.io/badge/best%20value-claude--haiku--5--5%40low-2ea44f)
 
 > Quality **Q** is the hidden-test score only: no judge has scored these attempts yet.
 
-> **Small sample:** 1 attempt(s) in total. Treat every number as an anecdote until each pair has 3+ reps per task.
+> **Small sample:** 8 attempt(s) in total. Treat every number as an anecdote until each pair has 3+ reps per task.
 
 | # | Pair | Provider | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |
 |---|---|---|---|---|---|---|---|---|---|---|---|
-| – | `claude-haiku-5-5@low` | anthropic | 1 | 100 % (21 %) | 100 % | 1.00 | $0.0033 | 0.62 | 301 | 1.62 | Pareto; below bar: needs more attempts (n=1 can't clear the bar) |
+| 1 | `claude-haiku-5-5@low` | anthropic | 4 | 100 % (51 %) | 75 % | 0.99 | $0.0042 | 0.66 | 236 | 1.49 | Pareto |
+| – | `claude-haiku-5-5@high` | anthropic | 4 | 75 % (30 %) | 100 % | 0.75 | $0.0073 | 1.04 | 103 | 0.71 | below bar: pass-rate bound < 0.4; no measurable gain over @low (ΔQ -0.24, 95 % CI -0.74 to +0.03) at 1.7× the cost |
 
 Full tables: [reports/LEADERBOARD.md](reports/LEADERBOARD.md) · routing: [reports/routing.md](reports/routing.md) · charts: [reports/index.html](reports/index.html)
 <!-- leaderboard:end -->
