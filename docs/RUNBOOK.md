@@ -73,27 +73,30 @@ To test one pair first: scope `single` with model and effort (GitHub), or `--mod
 
 ## 3. Full-sweep estimate
 
-Current matrix v2: 2 models × 2 efforts × 4 tasks × 3 reps = **48 attempts**, run one after another.
+Current matrix v3: 7 pairs (Haiku at low and high, Sonnet at none, low, medium, high and max) × 4 tasks × 3 reps = **84 attempts**, run one after another.
 
 Measured from the 8 live attempts (Claude Haiku 5.5, tasks A–D, one rep each, local Windows machine):
 
-| Pair | Attempts measured | Mean wall-clock / attempt | Mean cost / attempt |
-|---|---|---|---|
-| `claude-haiku-5-5@low` | 4 | 39.5 s | $0.0042 |
-| `claude-haiku-5-5@high` | 4 (one hit the old 16k cap) | 62.7 s | $0.0073 |
-| `gemini-3.5-flash-lite@low/high` | 0 | not measured | not measured |
+| Pair | Attempts measured | Mean wall-clock / attempt | Mean tokens in / out | Mean cost / attempt |
+|---|---|---|---|---|
+| `claude-haiku-5-5@low` | 4 | 39.5 s | 12,635 / 5,855 | $0.0042 |
+| `claude-haiku-5-5@high` | 4 (one hit the old 16k cap) | 62.7 s | 6,472 / 13,340 | $0.0073 |
+| `claude-sonnet-5-5@*` | 0 | not measured | not measured | not measured |
+
+**Sonnet is inferred, not measured.** The estimate takes Haiku's mean token counts at Sonnet's prices ($2 in, $10 out per MTok): `none` and `low` use Haiku-low's tokens, `high` and `max` use Haiku-high's, `medium` sits halfway. Sonnet's thinking lengths will differ, `max` most of all.
 
 **Wall-clock** (12 attempts per pair):
 - Haiku: low 7.9 min + high 12.5 min = **about 20 min**.
-- Gemini: no data. If it takes as long as Haiku, another 20 min, so **about 41 min** for the whole matrix.
+- Sonnet, if as fast as Haiku: none 7.9 + low 7.9 + medium 10.2 + high 12.5 + max 12.5 = **about 51 min**. Sonnet is usually slower than Haiku, so treat this as a floor.
+- Whole matrix: **about 71 min or more**.
 - CI adds setup: Rust install, apt packages and, on a cold cache, crate fetch and a warm build. Not yet measured; expect several minutes cold and less with the cache. The sweep job's limit is 350 min.
 
 **Cost** (12 attempts per pair):
-- Haiku: low $0.050 + high $0.088 = **$0.14**.
-- Gemini (inferred, not measured): Haiku's mean token counts at Gemini's prices ($0.30 in, $2.50 out per MTok) give about $0.018 per low attempt and $0.035 per high attempt, so **about $0.64**. Gemini's tokenizer and thinking lengths differ, so treat this as rough.
-- Whole matrix: **about $0.78**.
+- Haiku: low $0.050 + high $0.088 = **$0.14** (measured).
+- Sonnet (inferred): about $0.084 per attempt at none/low, $0.115 at medium, $0.146 at high/max, so **about $6.90**.
+- Whole matrix: **about $7.04**.
 
-Things that push it up: retries (none happened in the 8 attempts; each attempt can take up to 3 model turns), the 32k cap at high effort (the capped attempt stopped at 16k, so a 32k rerun costs more), and slower Linux runners. **Suggested ceiling for the first full sweep: $2.00.** The run stops before any request whose worst case would cross the ceiling, and `--only-new` resumes from there.
+Things that push it up: retries (none happened in the 8 attempts; each attempt can take up to 3 model turns), the 32k cap at high and max (the capped Haiku attempt stopped at 16k, so a 32k rerun costs more), and slower Linux runners. The worst single Sonnet attempt at the 32k cap with 3 turns is about $1.08. **Suggested ceiling for the first full sweep: $15.00.** Live runs always take the ceiling you pass (`--usd-ceiling` locally, `usd_ceiling` in the sweep workflow); the matrix default `usd_ceiling_per_run: 1.00` applies to dry runs only. The run stops before any request whose worst case would cross the ceiling, and `--only-new` resumes from there.
 
 Re-estimate after each sweep: the per-pair means are in `reports/LEADERBOARD.md`.
 

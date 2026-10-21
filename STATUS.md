@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-22, end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval, and an answer to open question 4 before anything is pushed.
+Updated 2026-10-22 (sweep estimate redone for matrix v3), end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval, and an answer to open question 4 before anything is pushed.
 
 ## Phases
 
@@ -53,17 +53,17 @@ Run `2026-10-21T01-06-01Z_59ad6d`: Claude Haiku 5.5 at low and high effort × ta
 - **Security fix:** gates inherited the whole environment, so model-written tests could read the API keys and the hidden-test key. Gates now drop `BENCH_*`, `ACTIONS_*` and anything named like a key, token, secret, password or credential. Unit test added; task A re-verified (scaffold fails, reference passes, 23/23 hidden). Commit `fbb2d1d`. Needs a GitHub issue labelled `bug` once the remote exists.
 - Checked locally: YAML parses, the sweep's input checks accept and reject the right values, 91 unit tests and typecheck pass, reports rebuild byte-identical. **Not checked:** the workflows have never run on GitHub (no actionlint here either). Expect a fix-up commit or two on the first push.
 
-### Full-sweep estimate (matrix v2: 48 attempts)
+### Full-sweep estimate (matrix v3: 84 attempts)
 
-Wall-clock and cost, from the 8 live Haiku attempts. Gemini has no data, so its numbers are inferred.
+Matrix v3 (commit `aea3094`) drops Gemini and adds Sonnet 5.5 at none, low, medium, high and max; Haiku stays at low and high. Haiku numbers are measured from the 8 live attempts. Sonnet has no data, so its numbers are inferred: Haiku's token counts at Sonnet's prices, and Haiku's speed as a floor.
 
 | | Wall-clock | Cost |
 |---|---|---|
 | Haiku low + high (24 attempts) | about 20 min | $0.14 |
-| Gemini Flash-Lite low + high (24 attempts, inferred) | about 20 min if as fast as Haiku | about $0.64 |
-| **Whole matrix** | **about 41 min** + CI setup (not measured) | **about $0.78** |
+| Sonnet, 5 efforts (60 attempts, inferred) | about 51 min or more | about $6.90 |
+| **Whole matrix** | **about 71 min or more** + CI setup (not measured) | **about $7.04** |
 
-Retries, the 32k cap at high effort and slower runners push these up. Suggested first-sweep ceiling: $2.00. Details in RUNBOOK §3.
+Retries, the 32k cap at high/max and slower runners push these up. Suggested first-sweep ceiling: $15.00. Details in RUNBOOK §3.
 
 ## Decisions made
 
@@ -90,7 +90,7 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Next step
 
-CI on PR #11: unit tests pass on Ubuntu and Windows. `verify-tasks` fails only because the `BENCH_HIDDEN_KEY` secret isn't set.
+CI on PR #11: unit tests pass on Ubuntu and Windows. `verify-tasks` now skips with a warning while `BENCH_HIDDEN_KEY` is unset (commit `4641902`), so its green check does not yet mean the Linux gates work. Checked 2026-10-22: no repo secrets set, Pages not enabled. Local `phase-6-ci` is ahead of the remote by the matrix-v3 and estimate commits; not pushed.
 
 1. **Owner:** add secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`), set Pages source to GitHub Actions, then re-run CI on #11.
 2. Fix whatever `verify-tasks` hits on Linux (first real run of the Tauri build there; `ubuntu-latest` is moving to Ubuntu 26, so apt package names may need a check). Measure CI setup time cold and warm; add it to RUNBOOK §3.
