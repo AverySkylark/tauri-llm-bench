@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-21, end of Phase 3. Awaiting owner approval and a dollar ceiling for the Phase 4 live smoke.
+Updated 2026-10-21, end of Phase 4. Awaiting owner approval for Phase 5 (reports).
 
 ## Phases
 
@@ -9,24 +9,29 @@ Updated 2026-10-21, end of Phase 3. Awaiting owner approval and a dollar ceiling
 | 0 Plan | done | `phase-0-plan` |
 | 1 Scaffold, matrix, prices, schemas, adapters | done | `phase-1-scaffold` |
 | 2 Task suite A–D, hidden tests, verification | done (tasks approved as-is with "go") | `phase-2-tasks` |
-| 3 Orchestrator (`bench run`) | done, **awaiting approval** | `phase-3-orchestrator` |
-| 4 Live smoke (1 model, task A, N=1, ≤ $1) | not started | |
+| 3 Orchestrator (`bench run`) | done | `phase-3-orchestrator` |
+| 4 Live smoke (1 model, task A, N=1, ≤ $1) | done, **awaiting approval** | `phase-4-smoke` |
 | 5 Reports | not started | |
 | 6 CI, Pages, RUNBOOK | not started | |
 | 7 Full sweep | not started | |
 
 Branches are stacked (each phase branches from the previous one). No remote exists yet, so nothing is merged to `main` and no PRs are open.
 
-## Phase 3 result
+## Phase 4 result (live smoke)
 
-`harness/orchestrator/`: prompt builder and whole-file reply parser (writes and deletes), editable-path whitelist, retry loop with gate errors fed back (R = 2), caps (model-time timeout, output-token cap, run dollar ceiling checked before every request), transient-error retries, NDJSON writer that validates every line, `--only-new`, unified diff and hygiene counts per attempt.
+`claude-haiku-5-5` @ `low` (sent `thinking: adaptive`, `output_config.effort: low`), task A, N=1, ceiling $1.00. Run `2026-10-21T00-51-21Z_bbde84`, file `data/runs/1.0.0/2026-10-21T00-51-21Z_bbde84.ndjson`.
 
-Verified:
-- 70 unit tests pass (`npm test`), 22 of them new for the orchestrator.
-- Real dry run (fake model, real gates and hidden tests), `bench run --model claude-haiku-5-5 --effort low --dry-run --dry-reply fix-on-retry`: all 4 tasks fail the gates on turn 0, get the errors back, pass on turn 1, and score 100 % on the hidden tests (23/23, 14/14, 20/20, 19/19). 77 s wall-clock for 4 attempts.
-- Fail path (`--dry-reply empty`): 3 turns, `fail`, hidden 0/20. `--only-new` skipped the recorded pair. Unsupported effort is recorded and nothing is sent. `--live` without `--usd-ceiling` is refused.
+| | |
+|---|---|
+| Status | pass on the first turn (no retries) |
+| Hidden tests | 23/23 |
+| Tokens | 5,571 in, 5,522 out (Anthropic doesn't report thinking tokens separately) |
+| Cost | $0.0033 |
+| Time | model 20.3 s, wall-clock 36.9 s (gates 10.4 s, hidden tests and setup the rest) |
+| Hygiene | 0 new `unsafe`, 0 new unwraps, 0 hallucination-class errors |
+| Files | `src-tauri/src/lib.rs`, `src/api.ts`, `src/SeedVaultPanel.tsx`; no rejected edits |
 
-Prompt size: 3.7k–4.7k tokens per task. Worst-case cost of one Claude Haiku 5.5 turn is about $0.0085, so the Phase 4 smoke (task A, N=1, up to 3 turns) is at most about $0.03.
+Earlier Phase 3 checks still hold (70 unit tests, dry run of all 4 tasks).
 
 ## Decisions made
 
@@ -41,20 +46,21 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Open questions for the owner
 
-1. **Phase 4 go-ahead and ceiling.** Proposed: `claude-haiku-5-5` at `low`, task A, N=1, ceiling USD 1.00 (expected cost under $0.03). Needs `BENCH_ANTHROPIC_API_KEY` set in the shell that runs it.
-2. ESLint: stay a pass/fail gate (current), or become a hygiene metric only? Reports can show both views, since every gate is stored separately.
+1. **Task A may be too easy.** The cheapest model at low effort passed all 23 hidden tests on its first try. N=1 proves little, but if every pair aces A, A can't tell them apart (a ceiling effect). The sweep will show it; if so, harden A in suite 1.1.0.
+2. ESLint: stay a pass/fail gate (current), or become a hygiene metric only?
 3. Back up `~/.tauri-llm-bench/hidden.key`.
 4. Still unanswered from Phase 0: judge setup, λ, and whether the repo will be public. Defaults are in use.
 
 ## Next step
 
-After the owner says "go" and confirms the ceiling: **Phase 4**, live smoke:
+After the owner says "go": **Phase 5**, reports, generated from the smoke data (and dry-run data where a chart needs more than one point, clearly labelled):
+- `bench report` → `reports/LEADERBOARD.md` (rankings, best value, badges) and a README section;
+- standalone `reports/index.html`: Pareto scatter, failure heatmap, effort-scaling chart per model;
+- `bench report diff --base model@high --target model@low` with a significance note from rep variance;
+- routing table: cheapest acceptable pair per task class;
+- reports refuse to rank across suite versions without `--cross-suite`.
 
-```
-npm run bench -- run --live --usd-ceiling 1 --model claude-haiku-5-5 --effort low --task A --reps 1
-```
-
-Then show the cost and results from `data/runs/1.0.0/<run_id>.ndjson`, commit the run file, update STATUS.md, and stop.
+Live runs need the key copied in per command (see DECISIONS, Phase 4).
 
 ## How to resume
 
@@ -65,4 +71,5 @@ npm run bench -- tasks prepare
 npm run bench -- tasks verify
 npm test
 npm run bench -- run --model claude-haiku-5-5 --effort low --dry-run --reps 1   # end-to-end, no API calls
+# live (PowerShell): $env:BENCH_ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable('BENCH_ANTHROPIC_API_KEY','User'); npm run bench -- run --live --usd-ceiling <USD> ...
 ```
