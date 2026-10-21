@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tauri LLM Bench</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f9f9f7; --surface-1: #fcfcfb; --text-primary: #0b0b0b; --text-secondary: #52514e; --muted: #898781;
+  --grid: #e1e0d9; --axis: #c3c2b7; --border: rgba(11,11,11,0.10);
+  --series-1: #2a78d6; --series-2: #eb6834; --series-3: #1baf7a;
+  --seq-100: #cde2fb; --seq-250: #86b6ef; --seq-400: #3987e5; --seq-550: #1c5cab; --seq-700: #0d366b;
+  --banner: #fff6e0;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #f0efec; --text-secondary: #c3c2b7; --muted: #898781;
+    --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+    --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+    --seq-100: #104281; --seq-250: #1c5cab; --seq-400: #2a78d6; --seq-550: #6da7ec; --seq-700: #cde2fb;
+    --banner: #2f2610;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page: #0d0d0d; --surface-1: #1a1a19; --text-primary: #f0efec; --text-secondary: #c3c2b7; --muted: #898781;
+  --grid: #2c2c2a; --axis: #383835; --border: rgba(255,255,255,0.10);
+  --series-1: #3987e5; --series-2: #d95926; --series-3: #199e70;
+  --seq-100: #104281; --seq-250: #1c5cab; --seq-400: #2a78d6; --seq-550: #6da7ec; --seq-700: #cde2fb;
+  --banner: #2f2610;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--text-primary); font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; }
+main { max-width: 1080px; margin: 0 auto; padding: 24px 16px 64px; }
+header { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+h1 { font-size: 24px; margin: 0 0 4px; } h2 { font-size: 18px; margin: 40px 0 8px; } h3 { font-size: 15px; margin: 0 0 8px; }
+.muted, .meta { color: var(--text-secondary); } .meta { font-size: 13px; }
+.banner { background: var(--banner); border-radius: 8px; padding: 8px 12px; margin: 8px 0; }
+.card { background: var(--surface-1); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin: 8px 0; }
+.cards { display: grid; gap: 12px; }
+.minis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 16px; }
+figure { margin: 0; } figcaption { font-size: 12px; color: var(--text-secondary); }
+svg { width: 100%; height: auto; display: block; overflow: visible; }
+.grid { stroke: var(--grid); stroke-width: 1; } .axis { stroke: var(--axis); stroke-width: 1; }
+.ref { stroke: var(--muted); stroke-width: 1; }
+.frontier { fill: none; stroke: var(--text-secondary); stroke-width: 2; opacity: .5; }
+.series { fill: none; stroke-width: 2; }
+.tick { fill: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+.axis-label, .rowlabel { fill: var(--text-secondary); font-size: 12px; }
+.dlabel { fill: var(--text-primary); font-size: 12px; }
+.mark { stroke: var(--surface-1); stroke-width: 2; }
+.hit { fill: transparent; } .pt, .cell { cursor: default; outline: none; }
+.pt:focus .mark, .pt:hover .mark { stroke: var(--text-primary); }
+.cell:focus rect, .cell:hover rect { stroke: var(--text-primary); stroke-width: 2; }
+.nodata { fill: none; stroke: var(--grid); }
+.ct { font-size: 12px; font-variant-numeric: tabular-nums; fill: #0b0b0b; }
+.t3, .t4 { fill: #ffffff; }
+:root[data-theme="dark"] .t0, :root[data-theme="dark"] .t1 { fill: #f0efec; }
+:root[data-theme="dark"] .t3, :root[data-theme="dark"] .t4 { fill: #0b0b0b; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .t0, :root:not([data-theme="light"]) .t1 { fill: #f0efec; }
+  :root:not([data-theme="light"]) .t3, :root:not([data-theme="light"]) .t4 { fill: #0b0b0b; }
+}
+.legend { font-size: 12px; color: var(--text-secondary); margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: center; }
+.sw { display: inline-flex; align-items: center; gap: 4px; } .sw i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.key { display: inline-flex; align-items: center; gap: 6px; } .key svg { width: 14px; height: 14px; display: inline; }
+.scroll { overflow-x: auto; }
+.heat > svg { min-width: 560px; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; margin: 8px 0; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--grid); vertical-align: top; }
+td.n { text-align: right; font-variant-numeric: tabular-nums; }
+details { margin-top: 8px; } summary { cursor: pointer; color: var(--text-secondary); font-size: 13px; }
+code { font: 12px ui-monospace, "Cascadia Mono", Consolas, monospace; }
+.flags { font-size: 13px; color: var(--text-secondary); padding-left: 18px; margin: 8px 0 0; }
+.empty { color: var(--muted); }
+button.theme { background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 6px 10px; font: inherit; font-size: 13px; cursor: pointer; }
+#tip { position: fixed; pointer-events: none; background: var(--surface-1); color: var(--text-primary); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; font-size: 12px; box-shadow: 0 4px 16px rgba(0,0,0,.15); display: none; max-width: 320px; z-index: 10; }
+#tip strong { display: block; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+<header>
+  <div><h1>Tauri LLM Bench</h1><div class="meta">Suite 1.0.0 · 1 run(s) · 1 attempt(s) · total spend $0.0033 · data as of 2026-10-21 00:51 UTC · λ $60/h</div></div>
+  <button class="theme" type="button" id="theme">Theme</button>
+</header>
+<p class="banner">Quality <strong>Q</strong> is the hidden-test score only: no judge has scored these attempts yet.</p>
+<p class="banner"><strong>Small sample:</strong> 1 attempt(s) in total. Treat every number as an anecdote until each pair has 3+ reps per task.</p>
+
+<h2>Cost vs quality</h2>
+<div class="card">
+  <div class="legend"><span class="key"><svg viewBox="-8 -8 16 16"><circle cx="0" cy="0" r="5" fill="var(--series-1)" /></svg>anthropic</span><span>Labelled points are on the Pareto front (cost, quality and time); the line is the cost–quality frontier.</span></div>
+  <svg viewBox="0 0 720 400" role="img" aria-label="Cost versus quality per pair"><line x1="56" x2="696" y1="352" y2="352" class="axis"/><text x="48" y="356" class="tick" text-anchor="end">0.00</text><line x1="56" x2="696" y1="269" y2="269" class="grid"/><text x="48" y="273" class="tick" text-anchor="end">0.25</text><line x1="56" x2="696" y1="186" y2="186" class="grid"/><text x="48" y="190" class="tick" text-anchor="end">0.50</text><line x1="56" x2="696" y1="103" y2="103" class="grid"/><text x="48" y="107" class="tick" text-anchor="end">0.75</text><line x1="56" x2="696" y1="20" y2="20" class="grid"/><text x="48" y="24" class="tick" text-anchor="end">1.00</text><line x1="142.28564271943685" x2="142.28564271943685" y1="20" y2="352" class="grid"/><text x="142.28564271943685" y="370" class="tick" text-anchor="middle">$0.002</text><line x1="565.3026330833926" x2="565.3026330833926" y1="20" y2="352" class="grid"/><text x="565.3026330833926" y="370" class="tick" text-anchor="middle">$0.005</text><line x1="56" x2="696" y1="152.8" y2="152.8" class="ref"/><text x="696" y="146.8" class="tick" text-anchor="end">quality bar 0.6</text><text x="376" y="392" class="axis-label" text-anchor="middle">Mean cost per attempt (log scale)</text><text x="14" y="186" class="axis-label" text-anchor="middle" transform="rotate(-90 14 186)">Quality Q</text><g class="pt" tabindex="0" data-tip="[&quot;claude-haiku-5-5@low&quot;,&quot;Q 1.00 · pass 100 % (n=1)&quot;,&quot;$0.0033 per attempt · 0.62 min&quot;,&quot;Pareto (cost, quality, time)&quot;]"><circle cx="376" cy="20" r="14" class="hit"/><circle cx="376" cy="20" r="5" fill="var(--series-1)" class="mark"/></g><text x="386" y="11" class="dlabel" text-anchor="start">claude-haiku-5-5@low</text></svg>
+  <details><summary>Table view</summary><div class="scroll"><table><thead><tr><th>Pair</th><th>Provider</th><th>Native effort</th><th>n</th><th>Pass</th><th>Wilson lo</th><th>1st-pass compile</th><th>Q</th><th>$ / attempt</th><th>min</th><th>VI</th><th>VI_t</th><th>Pareto</th><th>Meets bar</th></tr></thead><tbody><tr><td><code>claude-haiku-5-5@low</code></td><td>anthropic</td><td>thinking.type+output_config.effort=adaptive/low</td><td class="n">1</td><td class="n">100 %</td><td class="n">21 %</td><td class="n">100 %</td><td class="n">1.00</td><td class="n">$0.0033</td><td class="n">0.62</td><td class="n">301</td><td class="n">1.62</td><td>yes</td><td>no</td></tr></tbody></table></div></details>
+</div>
+
+<h2>Pass/fail by task</h2>
+<div class="card scroll heat">
+  <svg viewBox="0 0 354 78" role="img" aria-label="Pass count and quality per pair and task"><text x="288" y="20" class="tick" text-anchor="middle">Task A · C2</text><text x="220" y="58" class="rowlabel" text-anchor="end">claude-haiku-5-5@low</text><g class="cell" tabindex="0" data-tip="[&quot;claude-haiku-5-5@low · task A&quot;,&quot;1/1 passed gates · Q 1.00 (best 1.00)&quot;,&quot;pass@1 100 %&quot;]"><rect x="231" y="35" width="114" height="38" rx="4" fill="var(--seq-700)"/><text x="288" y="58" text-anchor="middle" class="ct t4">1/1 · 1.00</text></g></svg><div class="legend">Cell colour = Q (hidden-test score): <span class="sw"><i style="background:var(--seq-100)"></i>0.0–0.2</span><span class="sw"><i style="background:var(--seq-250)"></i>0.2–0.4</span><span class="sw"><i style="background:var(--seq-400)"></i>0.4–0.6</span><span class="sw"><i style="background:var(--seq-550)"></i>0.6–0.8</span><span class="sw"><i style="background:var(--seq-700)"></i>0.8–1.0</span></div>
+  <details><summary>Table view</summary><table><thead><tr><th>Pair</th><th>Task</th><th>Passed</th><th>Q mean</th><th>Q best</th><th>pass@n</th><th>Statuses</th></tr></thead><tbody><tr><td><code>claude-haiku-5-5@low</code></td><td>A (C2)</td><td class="n">1/1</td><td class="n">1.00</td><td class="n">1.00</td><td class="n">100 %</td><td>pass 1</td></tr></tbody></table></details>
+</div>
+
+<h2>Effort scaling per model</h2>
+<div class="cards"><div class="card"><h3>claude-haiku-5-5 <span class="muted">(anthropic)</span></h3><div class="minis"><figure><figcaption>Quality Q</figcaption><svg viewBox="0 0 460 200" role="img" aria-label="Quality by effort for claude-haiku-5-5"><line x1="54" x2="444" y1="170" y2="170" class="axis"/><text x="48" y="174" class="tick" text-anchor="end">0.0</text><line x1="54" x2="444" y1="92" y2="92" class="grid"/><text x="48" y="96" class="tick" text-anchor="end">0.5</text><line x1="54" x2="444" y1="14" y2="14" class="grid"/><text x="48" y="18" class="tick" text-anchor="end">1.0</text><text x="54" y="190" class="tick" text-anchor="middle">none</text><text x="151.5" y="190" class="tick" text-anchor="middle">low</text><text x="249" y="190" class="tick" text-anchor="middle">medium</text><text x="346.5" y="190" class="tick" text-anchor="middle">high</text><text x="444" y="190" class="tick" text-anchor="middle">max</text><g class="pt" tabindex="0" data-tip="[&quot;claude-haiku-5-5@low&quot;,&quot;Q 1.00 (n=1)&quot;]"><circle cx="151.5" cy="14" r="14" class="hit"/><circle cx="151.5" cy="14" r="4.5" fill="var(--series-1)" class="mark"/></g></svg></figure><figure><figcaption>Mean $ per attempt</figcaption><svg viewBox="0 0 460 200" role="img" aria-label="Cost by effort for claude-haiku-5-5"><line x1="54" x2="444" y1="170" y2="170" class="axis"/><text x="48" y="174" class="tick" text-anchor="end">$0</text><line x1="54" x2="444" y1="92" y2="92" class="grid"/><text x="48" y="96" class="tick" text-anchor="end">$0.002</text><line x1="54" x2="444" y1="14" y2="14" class="grid"/><text x="48" y="18" class="tick" text-anchor="end">$0.003</text><text x="54" y="190" class="tick" text-anchor="middle">none</text><text x="151.5" y="190" class="tick" text-anchor="middle">low</text><text x="249" y="190" class="tick" text-anchor="middle">medium</text><text x="346.5" y="190" class="tick" text-anchor="middle">high</text><text x="444" y="190" class="tick" text-anchor="middle">max</text><g class="pt" tabindex="0" data-tip="[&quot;claude-haiku-5-5@low&quot;,&quot;$0.0033 per attempt (n=1)&quot;]"><circle cx="151.5" cy="14" r="14" class="hit"/><circle cx="151.5" cy="14" r="4.5" fill="var(--series-1)" class="mark"/></g></svg></figure></div></div></div>
+
+<h2>Routing: cheapest acceptable pair per class</h2>
+<div class="card scroll"><table><thead><tr><th>Class</th><th>Tasks</th><th>Cheapest pair meeting the bar</th><th>Q</th><th>$ / attempt</th><th>Highest quality seen</th></tr></thead><tbody><tr><td>C2</td><td>A</td><td>none of 1 pair(s) meets the bar yet</td><td>–</td><td>–</td><td><code>claude-haiku-5-5@low</code> (Q 1.00, $0.0033, n=1)</td></tr></tbody></table>
+<p>Bar: Q ≥ 0.6 and pass-rate Wilson lower bound ≥ 0.4 on that class's tasks. With one task per class (suite 1.x), &quot;per class&quot; really means &quot;per task&quot;.</p></div>
+</main>
+<div id="tip" role="tooltip"></div>
+<script>
+(() => {
+  const tip = document.getElementById('tip');
+  const show = (el, x, y) => {
+    let lines;
+    try { lines = JSON.parse(el.getAttribute('data-tip')); } catch { return; }
+    tip.replaceChildren();
+    lines.forEach((l, i) => { const n = document.createElement(i ? 'div' : 'strong'); n.textContent = l; tip.appendChild(n); });
+    tip.style.display = 'block';
+    const r = tip.getBoundingClientRect();
+    tip.style.left = Math.min(x + 14, innerWidth - r.width - 8) + 'px';
+    tip.style.top = Math.max(8, y - r.height - 12) + 'px';
+  };
+  const hide = () => { tip.style.display = 'none'; };
+  for (const el of document.querySelectorAll('[data-tip]')) {
+    el.addEventListener('pointermove', (e) => show(el, e.clientX, e.clientY));
+    el.addEventListener('pointerleave', hide);
+    el.addEventListener('focus', () => { const b = el.getBoundingClientRect(); show(el, b.right, b.top); });
+    el.addEventListener('blur', hide);
+  }
+  const root = document.documentElement;
+  try { const t = localStorage.getItem('bench-theme'); if (t) root.dataset.theme = t; } catch {}
+  document.getElementById('theme').addEventListener('click', () => {
+    const dark = root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+    root.dataset.theme = dark ? 'light' : 'dark';
+    try { localStorage.setItem('bench-theme', root.dataset.theme); } catch {}
+  });
+})();
+</script>
+</body>
+</html>

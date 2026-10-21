@@ -83,3 +83,15 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **API key lives in the owner's Windows user environment, set by the owner outside Claude Code.** Alternative: paste it into the chat, or keep a `.env` file. Why: anything pasted into the chat stays in the transcript, and PROMPT.md forbids keys in files. Claude Code's own process predates the variable, so each live command copies it from the user scope into that one process (`$env:X = [Environment]::GetEnvironmentVariable('X','User')`). The key is never printed.
 
 **Smoke result: committed as real data.** The run file `data/runs/1.0.0/2026-10-21T00-51-21Z_bbde84.ndjson` is the first live record. It's kept, not discarded as a test, because SPEC says runs are append-only results.
+
+## 2026-10-21 — Phase 5
+
+**Attempt quality score.** Chose: the hidden-test fraction when the final code compiles (cargo check and tsc pass), else 0. Capped, refused and errored attempts score 0 at full cost. Alternative: score 0 for every attempt that fails a gate. Why: an attempt failing only ESLint or one visible test still did measurable work, and pass rate already reports the gate failure. Q = H until judge scores exist; every report says so.
+
+**Effort flag needs at least 3 attempts per side.** Below that, the report says "too few attempts to test the gain" instead of flagging. Significance uses a seeded bootstrap (4000 resamples, 95 %), so the same data always renders the same report.
+
+**Reports never mix dry and live data.** `bench report --dry` reads `.bench-work/dry-runs/` and writes its reports there, with a SIMULATED banner. The committed `reports/` and the README block come from `data/runs/` only. Suites are never mixed without `--cross-suite`, which adds a warning banner.
+
+**HTML report is static and self-contained.** Inline SVG rendered in Node, a few lines of inline JS for tooltips and the theme toggle, no CDN or fonts. Alternative: a chart library from a CDN. Why: Pages serves it as one file, it works offline, and diffs stay readable. Provider colours are fixed per provider (blue, orange, green), validated colour-blind-safe in light and dark mode, and each provider also gets its own marker shape. Every chart has a table view.
+
+**Reports are deterministic.** No generation timestamp; "data as of" is the latest run's finish time, so rebuilding from the same data gives byte-identical files.

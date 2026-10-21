@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-21, end of Phase 4. Awaiting owner approval for Phase 5 (reports).
+Updated 2026-10-21, end of Phase 5. Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
 
 ## Phases
 
@@ -10,8 +10,8 @@ Updated 2026-10-21, end of Phase 4. Awaiting owner approval for Phase 5 (reports
 | 1 Scaffold, matrix, prices, schemas, adapters | done | `phase-1-scaffold` |
 | 2 Task suite A–D, hidden tests, verification | done (tasks approved as-is with "go") | `phase-2-tasks` |
 | 3 Orchestrator (`bench run`) | done | `phase-3-orchestrator` |
-| 4 Live smoke (1 model, task A, N=1, ≤ $1) | done, **awaiting approval** | `phase-4-smoke` |
-| 5 Reports | not started | |
+| 4 Live smoke (1 model, task A, N=1, ≤ $1) | done | `phase-4-smoke` |
+| 5 Reports | done, **awaiting approval** | `phase-5-reports` |
 | 6 CI, Pages, RUNBOOK | not started | |
 | 7 Full sweep | not started | |
 
@@ -31,7 +31,13 @@ Branches are stacked (each phase branches from the previous one). No remote exis
 | Hygiene | 0 new `unsafe`, 0 new unwraps, 0 hallucination-class errors |
 | Files | `src-tauri/src/lib.rs`, `src/api.ts`, `src/SeedVaultPanel.tsx`; no rejected edits |
 
-Earlier Phase 3 checks still hold (70 unit tests, dry run of all 4 tasks).
+## Phase 5 result (reports)
+
+`bench report` writes `reports/LEADERBOARD.md`, `reports/routing.md`, `reports/index.html` and the README leaderboard block. `bench report diff --base m@e --target m@e` prints a per-task comparison with a bootstrap significance note.
+- Built from the one live attempt: it ranks nothing yet. One pass out of one has a Wilson lower bound of 21 %, below the 40 % bar, and the report says so instead of crowning a winner.
+- Charts (Pareto scatter, pass/fail heatmap, effort scaling per model) were checked against a 72-attempt synthetic dataset. Screenshots were taken in light, dark and narrow mode. Simulated reports go to `.bench-work/dry-runs/reports/` with a SIMULATED banner and never into `reports/`.
+- Rebuilding from the same data gives byte-identical files.
+- 84 unit tests pass (14 new for reports).
 
 ## Decisions made
 
@@ -46,21 +52,19 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Open questions for the owner
 
-1. **Task A may be too easy.** The cheapest model at low effort passed all 23 hidden tests on its first try. N=1 proves little, but if every pair aces A, A can't tell them apart (a ceiling effect). The sweep will show it; if so, harden A in suite 1.1.0.
+1. **Task A may be too easy.** Claude Haiku 5.5 at low effort passed all 23 hidden tests on its first try. The sweep will show whether every pair aces it; if so, harden A in suite 1.1.0.
 2. ESLint: stay a pass/fail gate (current), or become a hygiene metric only?
 3. Back up `~/.tauri-llm-bench/hidden.key`.
-4. Still unanswered from Phase 0: judge setup, λ, and whether the repo will be public. Defaults are in use.
+4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
+5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
 
 ## Next step
 
-After the owner says "go": **Phase 5**, reports, generated from the smoke data (and dry-run data where a chart needs more than one point, clearly labelled):
-- `bench report` → `reports/LEADERBOARD.md` (rankings, best value, badges) and a README section;
-- standalone `reports/index.html`: Pareto scatter, failure heatmap, effort-scaling chart per model;
-- `bench report diff --base model@high --target model@low` with a significance note from rep variance;
-- routing table: cheapest acceptable pair per task class;
-- reports refuse to rank across suite versions without `--cross-suite`.
-
-Live runs need the key copied in per command (see DECISIONS, Phase 4).
+After the owner says "go" (and answers question 4): **Phase 6**:
+- `.github/workflows/reports.yml`: on push, test, rebuild reports, deploy `reports/` to Pages. Never spends money.
+- `.github/workflows/sweep.yml`: `workflow_dispatch` only, with a required dollar-ceiling input. Secrets: `BENCH_*_API_KEY`, `BENCH_HIDDEN_KEY`. Commits the run file and the rebuilt reports.
+- CI needs Rust, Node 24 and the shared caches (`tasks prepare`) on ubuntu-latest.
+- `docs/RUNBOOK.md`: add a model and publish in under 15 minutes. State full-sweep wall-clock and cost separately, estimated from the smoke data: about 37 s and $0.0033 per Haiku attempt on task A.
 
 ## How to resume
 
@@ -71,5 +75,6 @@ npm run bench -- tasks prepare
 npm run bench -- tasks verify
 npm test
 npm run bench -- run --model claude-haiku-5-5 --effort low --dry-run --reps 1   # end-to-end, no API calls
+npm run bench -- report        # rebuild reports/ and the README block from data/runs
 # live (PowerShell): $env:BENCH_ANTHROPIC_API_KEY = [Environment]::GetEnvironmentVariable('BENCH_ANTHROPIC_API_KEY','User'); npm run bench -- run --live --usd-ceiling <USD> ...
 ```
