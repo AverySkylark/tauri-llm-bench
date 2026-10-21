@@ -1,0 +1,60 @@
+name: Set up bench
+description: Node 24, pinned Rust, Tauri system libraries, npm installs, warm cargo caches, decrypted hidden tests.
+inputs:
+  hidden-key:
+    description: BENCH_HIDDEN_KEY secret (base64). Used only by the decrypt step.
+    required: true
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v5
+      with:
+        node-version: 24
+        cache: npm
+        cache-dependency-path: |
+          package-lock.json
+          tasks/_shared/frontend/package-lock.json
+
+    # Same toolchain as the owner's machine (docs/DECISIONS.md, Phase 6). rustup is preinstalled on ubuntu-latest.
+    - name: Rust 1.99.1
+      shell: bash
+      run: |
+        rustup toolchain install 1.99.1 --profile minimal --no-self-update
+        rustup default 1.99.1
+        rustc --version
+
+    - name: Tauri system libraries
+      shell: bash
+      run: |
+        sudo apt-get update -q
+        sudo apt-get install -y -q libwebkit2gtk-4.1-dev libgtk-3-dev librsvg2-dev \
+          libayatana-appindicator3-dev libssl-dev build-essential pkg-config
+
+    - name: Cargo caches
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cargo/registry/index
+          ~/.cargo/registry/cache
+          ~/.cargo/git/db
+          .bench-work/target
+        key: bench-cargo-${{ runner.os }}-1.99.1-${{ hashFiles('tasks/_shared/Cargo.lock', 'tasks/_shared/template/src-tauri/Cargo.toml') }}
+        restore-keys: bench-cargo-${{ runner.os }}-1.99.1-
+
+    - name: npm installs
+      shell: bash
+      run: |
+        npm ci --no-audit --no-fund
+        (cd tasks/_shared/frontend && npm ci --no-audit --no-fund)
+
+    - name: Decrypt hidden tests
+      shell: bash
+      env:
+        BENCH_HIDDEN_KEY: ${{ inputs.hidden-key }}
+      run: |
+        if [ -z "$BENCH_HIDDEN_KEY" ]; then echo "::error::BENCH_HIDDEN_KEY secret is not set"; exit 1; fi
+        npm run bench -- hidden decrypt
+
+    - name: Fetch crates and warm target dir
+      shell: bash
+      run: npm run bench -- tasks prepare

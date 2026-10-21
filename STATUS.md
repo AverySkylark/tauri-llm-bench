@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-21, end of Phase 5 (+ mini-sweep, output cap 32k for high/max effort). Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
+Updated 2026-10-22, end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval, and an answer to open question 4 before anything is pushed.
 
 ## Phases
 
@@ -11,8 +11,8 @@ Updated 2026-10-21, end of Phase 5 (+ mini-sweep, output cap 32k for high/max ef
 | 2 Task suite A–D, hidden tests, verification | done (tasks approved as-is with "go") | `phase-2-tasks` |
 | 3 Orchestrator (`bench run`) | done | `phase-3-orchestrator` |
 | 4 Live smoke (1 model, task A, N=1, ≤ $1) | done | `phase-4-smoke` |
-| 5 Reports | done, **awaiting approval** | `phase-5-reports` |
-| 6 CI, Pages, RUNBOOK | not started | |
+| 5 Reports | done (approved with "go") | `phase-5-reports`, then `mini-sweep-haiku`, `cap-32k-high-effort` |
+| 6 CI, Pages, RUNBOOK | done locally, **awaiting approval**; workflows not yet run (no remote) | `phase-6-ci` |
 | 7 Full sweep | not started | |
 
 Branches are stacked (each phase branches from the previous one). No remote exists yet, so nothing is merged to `main` and no PRs are open.
@@ -43,6 +43,28 @@ Branches are stacked (each phase branches from the previous one). No remote exis
 
 Run `2026-10-21T01-06-01Z_59ad6d`: Claude Haiku 5.5 at low and high effort × tasks A–D × 1 rep, with `--only-new` (A@low came from the smoke run). Gemini skipped at the owner's request. 7 attempts, $0.0427: 6 passed, and C@high was `capped_tokens` (16,000-token cap hit while thinking). Reports rebuilt from 8 live attempts. `haiku@low` is the first pair ranked; `haiku@high` is flagged "no measurable gain" at 1.7× the cost.
 
+## Phase 6 result (CI, Pages, runbook)
+
+- `.github/workflows/ci.yml`: on every push and PR, typecheck and unit tests on Ubuntu and Windows; `tasks verify` plus a dry run on Ubuntu (needs the `BENCH_HIDDEN_KEY` secret). Never spends money.
+- `.github/workflows/pages.yml`: on push to `main` (runs, reports, matrix, prices), manual, or called by the sweep. Rebuilds reports, commits them if changed, deploys `reports/` to Pages from `main` only.
+- `.github/workflows/sweep.yml`: manual dispatch only. Required `usd_ceiling`; scope `only-new` | `matrix` | `single`; optional tasks and reps. Inputs go through `env` and are pattern-checked. Commits the run file even when the run fails or hits the ceiling, rebuilds reports, then calls `pages.yml`. One sweep at a time, never cancelled.
+- `.github/actions/setup-bench`: Node 24, Rust 1.99.1 (pinned to the local version), Tauri apt packages, cargo and npm caches, hidden-test decrypt, `tasks prepare`.
+- `docs/RUNBOOK.md`: setup, secrets, Pages, add-a-model steps (target under 15 min, not yet timed), full-sweep estimate, safety, troubleshooting. Linked from the README.
+- **Security fix:** gates inherited the whole environment, so model-written tests could read the API keys and the hidden-test key. Gates now drop `BENCH_*`, `ACTIONS_*` and anything named like a key, token, secret, password or credential. Unit test added; task A re-verified (scaffold fails, reference passes, 23/23 hidden). Commit `fbb2d1d`. Needs a GitHub issue labelled `bug` once the remote exists.
+- Checked locally: YAML parses, the sweep's input checks accept and reject the right values, 91 unit tests and typecheck pass, reports rebuild byte-identical. **Not checked:** the workflows have never run on GitHub (no actionlint here either). Expect a fix-up commit or two on the first push.
+
+### Full-sweep estimate (matrix v2: 48 attempts)
+
+Wall-clock and cost, from the 8 live Haiku attempts. Gemini has no data, so its numbers are inferred.
+
+| | Wall-clock | Cost |
+|---|---|---|
+| Haiku low + high (24 attempts) | about 20 min | $0.14 |
+| Gemini Flash-Lite low + high (24 attempts, inferred) | about 20 min if as fast as Haiku | about $0.64 |
+| **Whole matrix** | **about 41 min** + CI setup (not measured) | **about $0.78** |
+
+Retries, the 32k cap at high effort and slower runners push these up. Suggested first-sweep ceiling: $2.00. Details in RUNBOOK §3.
+
 ## Decisions made
 
 Full log in `docs/DECISIONS.md`. Key ones:
@@ -59,7 +81,8 @@ Full log in `docs/DECISIONS.md`. Key ones:
 1. **Task A may be too easy.** Claude Haiku 5.5 at low effort passed all 23 hidden tests on its first try. The sweep will show whether every pair aces it; if so, harden A in suite 1.1.0.
 2. ESLint: stay a pass/fail gate (current), or become a hygiene metric only?
 3. Back up `~/.tauri-llm-bench/hidden.key`.
-4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
+4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Needed now: public or private, a repo name, and permission to create the remote and push. Then add the secrets and set Pages' source to GitHub Actions (RUNBOOK §1).
+7. **Known gap:** decrypted hidden tests sit in `hidden/plain/` during a run, where gate code could read them and leak them into retry feedback. Fix: decrypt only after the last turn. Do it before the full sweep, or accept and watch for it?
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
 6. Resolved: the 300 s fetch header timeout (now `node:https`), and mixed caps (split rows, option b).
 
@@ -67,11 +90,11 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Next step
 
-After the owner says "go" (and answers question 4): **Phase 6**:
-- `.github/workflows/reports.yml`: on push, test, rebuild reports, deploy `reports/` to Pages. Never spends money.
-- `.github/workflows/sweep.yml`: `workflow_dispatch` only, with a required dollar-ceiling input. Secrets: `BENCH_*_API_KEY`, `BENCH_HIDDEN_KEY`. Commits the run file and the rebuilt reports.
-- CI needs Rust, Node 24 and the shared caches (`tasks prepare`) on ubuntu-latest.
-- `docs/RUNBOOK.md`: add a model and publish in under 15 minutes. State full-sweep wall-clock and cost separately, estimated from the smoke data: about 37 s and $0.0033 per Haiku attempt on task A.
+After the owner says "go" and answers question 4:
+1. Create the GitHub repo, push `main` and the stacked phase branches, and open PRs (or merge, if the owner prefers). File the gate-env bug as an issue (`bug`) and close it with `fbb2d1d`'s PR.
+2. Owner adds secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`) and sets Pages' source to GitHub Actions.
+3. Watch the first `ci.yml` and `pages.yml` runs and fix what breaks. Measure CI setup time cold and warm, and add it to RUNBOOK §3.
+4. Then Phase 7 (full sweep) only when the owner says so, with their ceiling. The paused `haiku@high` 32k rerun is covered by `--only-new`.
 
 ## How to resume
 

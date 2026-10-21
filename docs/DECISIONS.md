@@ -103,3 +103,19 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Live calls use `node:https`, not global `fetch`.** Why: `fetch`'s HTTP client (undici) gives up waiting for response headers after 300 s, and a non-streaming reply sends none until it's finished. That would look like a network error and be retried and billed again. `node:https` has no such limit; the attempt's own timeout is the only deadline. Alternative: stream responses. Rejected for now: three adapters to rewrite for the same effect. Checked against a local server with delayed headers, and against the Anthropic endpoint with an invalid key (401, nothing billed).
 
 **Attempts under different output caps are separate rows.** Owner's choice, option (b) (owner wrote "(2)", read as the second option). A model@effort whose attempts ran under different caps is split into rows like `claude-haiku-5-5@high/16k` and `/32k`, and every row shows its cap. `--only-new` treats the cap as part of the pair, so `haiku@high` reruns at 32k. Alternatives: (a) leave the old attempts out of rankings, (c) mix them with a note.
+
+## 2026-10-22 — Phase 6
+
+**Gates run with secrets stripped from the environment.** Found while planning CI: gates inherited the full process env, so model-written tests or build scripts could read `BENCH_*_API_KEY` and `BENCH_HIDDEN_KEY`. Now every `BENCH_*`, `ACTIONS_*` and any variable named like a key, token, secret, password or credential is dropped. Alternative: an allowlist of variables. Rejected: cargo, rustup and MSVC need a long, platform-specific list (PATH, HOME, USERPROFILE, LIB, INCLUDE, …), and a missing one breaks gates in confusing ways. Not fixed yet: decrypted hidden tests sit on disk during a run (RUNBOOK §4).
+
+**Three workflows; only one spends money.** `ci.yml` (tests on Ubuntu and Windows, `tasks verify` on Ubuntu), `pages.yml` (rebuild, commit, deploy), `sweep.yml` (manual dispatch, required ceiling). Alternative: one workflow with conditions. Why: the owner's rule that nothing spends without a confirmed ceiling is easiest to check when spending lives in a single manual-only file. `tasks verify` in CI was added to prove the Linux gate path before the first paid sweep there.
+
+**Sweep calls `pages.yml` itself.** Pushes made with `GITHUB_TOKEN` don't trigger other workflows, so the sweep's commit would never reach Pages on its own. Alternative: a personal access token. Rejected: another long-lived secret.
+
+**Sweep commits the run file even when the run fails or stops at the ceiling** (`if: always()`). Capped runs are results (SPEC §2).
+
+**CI pins Rust 1.99.1** (the owner's local version) via preinstalled rustup, not a third-party action. Alternative: `stable`. Why: a new stable release could change compiler errors and gate results between sweeps. Bump it deliberately and note it here.
+
+**Workflow inputs are passed through `env`, never pasted into scripts.** Why: `${{ inputs.x }}` inside `run:` is shell injection. The ceiling, task list and reps are also checked by pattern before anything runs.
+
+**Full-sweep estimate uses the 8 Haiku attempts; Gemini is inferred.** No Gemini attempt has run yet, so its cost is Haiku's mean token counts at Gemini prices, labelled as rough in the runbook.

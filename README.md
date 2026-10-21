@@ -5,6 +5,7 @@ An independent, repeatable benchmark of LLM model × reasoning-effort pairs on e
 - What's measured and why: [docs/PLAN.md](docs/PLAN.md)
 - The tasks: [docs/TASKS.md](docs/TASKS.md)
 - Decisions: [docs/DECISIONS.md](docs/DECISIONS.md)
+- Add a model, run a sweep, publish: [docs/RUNBOOK.md](docs/RUNBOOK.md)
 
 ## Leaderboard
 

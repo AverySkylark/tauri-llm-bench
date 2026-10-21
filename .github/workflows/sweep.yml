@@ -1,0 +1,136 @@
+# The only workflow that spends money. Manual dispatch only, with a required dollar ceiling.
+# Commits the run file (including capped and failed attempts) and the rebuilt reports, then deploys Pages.
+name: Sweep (live, spends money)
+
+on:
+  workflow_dispatch:
+    inputs:
+      usd_ceiling:
+        description: Dollar ceiling for this run (required, e.g. 2.00). The run stops before any request that could cross it.
+        type: string
+        required: true
+      scope:
+        description: only-new = matrix pairs/tasks/reps not yet recorded; matrix = everything again; single = one model@effort
+        type: choice
+        options: [only-new, matrix, single]
+        default: only-new
+      model:
+        description: Model ID (scope=single only)
+        type: string
+        default: ''
+      effort:
+        description: Effort (scope=single only)
+        type: choice
+        options: ['', none, low, medium, high, max]
+        default: ''
+      tasks:
+        description: Comma-separated task IDs, blank = all
+        type: string
+        default: ''
+      reps:
+        description: Reps per pair and task, blank = matrix default
+        type: string
+        default: ''
+
+permissions:
+  contents: read
+
+# One sweep at a time; never cancel a running one (that would lose paid results).
+concurrency:
+  group: sweep
+  cancel-in-progress: false
+
+jobs:
+  sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 350
+    permissions:
+      contents: write
+    outputs:
+      branch: ${{ github.ref_name }}
+    steps:
+      - uses: actions/checkout@v5
+
+      # Inputs are read from env, never pasted into the script, so they can't inject shell.
+      - name: Check inputs
+        env:
+          USD: ${{ inputs.usd_ceiling }}
+          SCOPE: ${{ inputs.scope }}
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          TASKS: ${{ inputs.tasks }}
+          REPS: ${{ inputs.reps }}
+        run: |
+          [[ "$USD" =~ ^[0-9]+(\.[0-9]+)?$ ]] && awk "BEGIN{exit !($USD > 0)}" || { echo "::error::usd_ceiling must be a number above 0"; exit 1; }
+          [[ -z "$TASKS" || "$TASKS" =~ ^[A-Za-z0-9,]+$ ]] || { echo "::error::tasks must look like A,B"; exit 1; }
+          [[ -z "$REPS" || "$REPS" =~ ^[1-9][0-9]*$ ]] || { echo "::error::reps must be a whole number"; exit 1; }
+          if [ "$SCOPE" = single ]; then
+            [[ "$MODEL" =~ ^[A-Za-z0-9._:-]+$ && -n "$EFFORT" ]] || { echo "::error::scope=single needs model and effort"; exit 1; }
+          elif [ -n "$MODEL$EFFORT" ]; then
+            echo "::error::model and effort are only for scope=single"; exit 1
+          fi
+          echo "Ceiling \$$USD, scope $SCOPE"
+
+      - uses: ./.github/actions/setup-bench
+        with:
+          hidden-key: ${{ secrets.BENCH_HIDDEN_KEY }}
+
+      - name: Run (live)
+        id: run
+        env:
+          BENCH_ANTHROPIC_API_KEY: ${{ secrets.BENCH_ANTHROPIC_API_KEY }}
+          BENCH_OPENAI_API_KEY: ${{ secrets.BENCH_OPENAI_API_KEY }}
+          BENCH_GOOGLE_API_KEY: ${{ secrets.BENCH_GOOGLE_API_KEY }}
+          USD: ${{ inputs.usd_ceiling }}
+          SCOPE: ${{ inputs.scope }}
+          MODEL: ${{ inputs.model }}
+          EFFORT: ${{ inputs.effort }}
+          TASKS: ${{ inputs.tasks }}
+          REPS: ${{ inputs.reps }}
+        run: |
+          args=(run --live --usd-ceiling "$USD")
+          case "$SCOPE" in
+            only-new) args+=(--only-new) ;;
+            matrix)   args+=(--matrix matrix/matrix.yaml) ;;
+            single)   args+=(--model "$MODEL" --effort "$EFFORT") ;;
+          esac
+          [ -n "$TASKS" ] && args+=(--task "$TASKS")
+          [ -n "$REPS" ] && args+=(--reps "$REPS")
+          npm run bench -- "${args[@]}" 2>&1 | tee "$RUNNER_TEMP/run.log"
+          exit "${PIPESTATUS[0]}"
+
+      # Runs even when the run step failed or stopped at the ceiling: capped attempts are results, not noise.
+      - name: Commit run file and reports
+        if: always() && steps.run.outcome != 'skipped'
+        env:
+          BRANCH: ${{ github.ref_name }}
+          USD: ${{ inputs.usd_ceiling }}
+          SCOPE: ${{ inputs.scope }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/runs
+          if git diff --cached --quiet; then echo "No run file written"; exit 0; fi
+          run_line=$(grep -E '^run [0-9T-]+Z_' "$RUNNER_TEMP/run.log" | tail -1 || true)
+          git commit -m "Sweep: ${run_line:-run file} (ceiling \$$USD, $SCOPE)"
+          git pull --rebase origin "$BRANCH"
+          npm run bench -- report
+          git add reports README.md
+          git diff --cached --quiet || git commit -m "Rebuild reports"
+          git push origin "HEAD:$BRANCH"
+
+      - name: Summary
+        if: always() && steps.run.outcome != 'skipped'
+        run: |
+          { echo '```'; tail -n 25 "$RUNNER_TEMP/run.log" 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+
+  pages:
+    needs: sweep
+    if: always() && needs.sweep.result != 'skipped'
+    permissions:
+      contents: write
+      pages: write
+      id-token: write
+    uses: ./.github/workflows/pages.yml
+    with:
+      ref: ${{ needs.sweep.outputs.branch }}

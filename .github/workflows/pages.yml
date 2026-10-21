@@ -1,0 +1,72 @@
+# Rebuild reports from committed run data, commit them if they changed, and deploy reports/ to Pages.
+# Never calls a model API. The sweep workflow calls this after it pushes (pushes made with GITHUB_TOKEN
+# don't trigger workflows on their own).
+name: Reports and Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - data/runs/**
+      - harness/report/**
+      - matrix/**
+      - prices/**
+      - reports/**
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: Commit or branch to build from
+        type: string
+        required: true
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.ref || github.ref }}
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run bench -- report
+
+      - name: Commit rebuilt reports
+        if: github.ref == 'refs/heads/main' || inputs.ref == 'main'
+        run: |
+          git add reports README.md
+          if git diff --cached --quiet; then echo "Reports already up to date"; exit 0; fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Rebuild reports"
+          git push origin HEAD:main
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: reports
+
+  deploy:
+    needs: build
+    # The github-pages environment only accepts the default branch unless its protection rules are changed.
+    if: github.ref == 'refs/heads/main' || inputs.ref == 'main'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
