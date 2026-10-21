@@ -154,3 +154,18 @@ describe('run schema', () => {
     expect(v({ ...summary, run_id: 'latest' })).toBe(false);
   });
 });
+
+describe('output cap per effort', () => {
+  it('pair cap wins, then the per-effort default, then the global default', async () => {
+    const { outputCap } = await import('../harness/matrix.ts');
+    const d = { max_output_tokens: 16000, max_output_tokens_by_effort: { high: 32000, max: 32000 } } as Parameters<typeof outputCap>[0];
+    expect(outputCap(d, undefined, 'low')).toBe(16000);
+    expect(outputCap(d, undefined, 'high')).toBe(32000);
+    expect(outputCap(d, 8000, 'high')).toBe(8000);
+  });
+
+  it('matrix.yaml gives high effort 32k', () => {
+    const { pairs } = loadMatrix(repoPath('matrix', 'matrix.yaml'));
+    for (const p of pairs) expect(p.maxOutputTokens).toBe(p.effort === 'high' || p.effort === 'max' ? 32000 : 16000);
+  });
+});

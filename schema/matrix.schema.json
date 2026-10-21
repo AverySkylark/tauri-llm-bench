@@ -17,6 +17,12 @@
         "reps": { "type": "integer", "minimum": 1, "maximum": 20 },
         "max_retries": { "type": "integer", "minimum": 0, "maximum": 5 },
         "max_output_tokens": { "type": "integer", "minimum": 256 },
+        "max_output_tokens_by_effort": {
+          "type": "object",
+          "description": "Overrides max_output_tokens per effort level; thinking counts against the cap, so higher efforts need room",
+          "propertyNames": { "$ref": "#/$defs/effort" },
+          "additionalProperties": { "type": "integer", "minimum": 256 }
+        },
         "temperature": { "$ref": "#/$defs/temperature" },
         "timeout_s": { "type": "integer", "minimum": 10 },
         "usd_ceiling_per_run": { "type": "number", "exclusiveMinimum": 0 },

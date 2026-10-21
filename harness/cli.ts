@@ -52,7 +52,7 @@ async function main(argv: string[]): Promise<number> {
     console.log(`matrix v${loaded.matrix.version}  hash ${loaded.hash.slice(0, 12)}  prices ${loaded.prices.version}  suite ${loaded.matrix.suite_version}`);
     for (const p of loaded.pairs) {
       const note = !p.supported ? 'UNSUPPORTED effort' : keys.includes(p.provider) ? 'key ok' : `no key (${KEY_ENV[p.provider]}) -> skipped`;
-      console.log(`  ${p.provider.padEnd(9)} ${p.model.padEnd(26)} ${p.effort.padEnd(6)} ${note}`);
+      console.log(`  ${p.provider.padEnd(9)} ${p.model.padEnd(26)} ${p.effort.padEnd(6)} cap ${String(p.maxOutputTokens).padEnd(6)} ${note}`);
     }
     return 0;
   }

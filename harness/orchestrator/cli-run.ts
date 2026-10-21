@@ -2,7 +2,7 @@
 
 import { parseArgs } from 'node:util';
 import { availableProviders, EFFORTS, isSupported, KEY_ENV, type Effort } from '../../adapters/index.ts';
-import { loadMatrix, type Pair } from '../matrix.ts';
+import { loadMatrix, outputCap, type Pair } from '../matrix.ts';
 import { repoPath } from '../paths.ts';
 import { priceFor } from '../prices.ts';
 import { findTask, listTasks } from '../tasks.ts';
@@ -56,7 +56,7 @@ export async function runCommand(args: string[]): Promise<number> {
         provider: price.provider,
         model: v.model,
         effort,
-        maxOutputTokens: entry?.max_output_tokens ?? d.max_output_tokens,
+        maxOutputTokens: outputCap(d, entry?.max_output_tokens, effort),
         temperature: entry?.temperature ?? d.temperature,
         supported: isSupported(price.provider, v.model, effort),
       },

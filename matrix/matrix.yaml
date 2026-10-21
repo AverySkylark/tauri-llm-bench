@@ -1,11 +1,14 @@
 # Benchmark matrix. Bump `version` on any change; the run record stores a hash of this file's content.
-version: 1
+version: 2
 suite_version: 1.0.0
 price_table: v1
 defaults:
   reps: 3
   max_retries: 2              # compile/test error feedback rounds
   max_output_tokens: 16000
+  max_output_tokens_by_effort:  # thinking counts against the cap; 16k capped haiku@high on task C (v1)
+    high: 32000
+    max: 32000
   temperature: provider_default
   timeout_s: 600
   usd_ceiling_per_run: 1.00

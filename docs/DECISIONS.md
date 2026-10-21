@@ -95,3 +95,7 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **HTML report is static and self-contained.** Inline SVG rendered in Node, a few lines of inline JS for tooltips and the theme toggle, no CDN or fonts. Alternative: a chart library from a CDN. Why: Pages serves it as one file, it works offline, and diffs stay readable. Provider colours are fixed per provider (blue, orange, green), validated colour-blind-safe in light and dark mode, and each provider also gets its own marker shape. Every chart has a table view.
 
 **Reports are deterministic.** No generation timestamp; "data as of" is the latest run's finish time, so rebuilding from the same data gives byte-identical files.
+
+## 2026-10-21 — Output cap per effort (matrix v2)
+
+**High and max effort get a 32,000-token output cap; other efforts keep 16,000.** Owner's choice ("raise the cap to 32k") after `haiku@high` hit 16,000 tokens while thinking on task C. Why: Anthropic counts thinking against `max_output_tokens`, so a cap shared across efforts penalises high effort for thinking rather than for worse code. A per-pair cap still wins over the per-effort default, for models with a lower limit. Claude Haiku 5.5 allows 128K output (claude-api skill, models.md). Gemini 3.5 Flash-Lite's limit was not re-checked (inferred to be above 32K). Matrix bumped to version 2; earlier attempts keep `max_output_tokens: 16000` in their records.

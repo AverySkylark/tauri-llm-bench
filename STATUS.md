@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-21, end of Phase 5. Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
+Updated 2026-10-21, end of Phase 5 (+ mini-sweep, output cap 32k for high/max effort). Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
 
 ## Phases
 
@@ -61,7 +61,8 @@ Full log in `docs/DECISIONS.md`. Key ones:
 3. Back up `~/.tauri-llm-bench/hidden.key`.
 4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
-6. **Output-token cap vs effort.** Anthropic counts thinking tokens against `max_output_tokens` (16,000). At high effort, Haiku hit it on task C, so high effort can be penalised for thinking, not for worse code. Option: raise the cap for high and max effort (e.g. 32,000) with a matrix version bump before the full sweep.
+6. **Mixed caps in `haiku@high`.** Its 4 recorded attempts ran with a 16k cap; new ones run with 32k (matrix v2). Reports group by model@effort, so they will mix unless the owner wants pairs split by cap, or those 4 attempts left out of rankings.
+7. **Long requests may hit Node's 300 s header timeout.** Non-streaming `fetch` waits for the whole reply before headers arrive; undici's default `headersTimeout` is 300 s, below the 600 s attempt timeout. Such a failure looks like a network error and would be retried (and billed) up to 3 more times. Fine for Haiku (about 2 min at 32k); fix before the full sweep (raise undici timeouts, or stream).
 
 ## Next step
 
