@@ -27,7 +27,13 @@ jobs:
         with:
           node-version: 24
           cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tasks/_shared/frontend/package-lock.json
       - run: npm ci --no-audit --no-fund
+      - name: Shared task frontend install
+        working-directory: tasks/_shared/frontend
+        run: npm ci --no-audit --no-fund
       - run: npm run typecheck
       - run: npm test
       - name: Validate matrix
