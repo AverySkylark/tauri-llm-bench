@@ -1,0 +1,24 @@
+# Benchmark matrix. Bump `version` on any change; the run record stores a hash of this file's content.
+version: 1
+suite_version: 0.0.0          # no tasks yet (Phase 2)
+price_table: v1
+defaults:
+  reps: 3
+  max_retries: 2              # compile/test error feedback rounds
+  max_output_tokens: 16000
+  temperature: provider_default
+  timeout_s: 600
+  usd_ceiling_per_run: 1.00
+  value_index:
+    latency_usd_per_hour: 60  # λ in VI_t = Q / (C + λ·T)
+    min_quality: 0.6
+    min_pass_wilson_lower: 0.4
+
+# Phase 1 starter: 2 cheap models x 2 efforts.
+pairs:
+  - provider: anthropic
+    model: claude-haiku-5-5
+    efforts: [low, high]
+  - provider: google
+    model: gemini-3.5-flash-lite
+    efforts: [low, high]

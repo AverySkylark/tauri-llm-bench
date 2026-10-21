@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tauri-llm-bench/schema/run.schema.json",
+  "title": "Run file line (NDJSON): one of run | attempt | summary",
+  "description": "Each line of data/runs/<suite_version>/<run_id>.ndjson validates against this schema. Files are append-only; schema changes bump schema_version and ship a migration.",
+  "oneOf": [{ "$ref": "#/$defs/run" }, { "$ref": "#/$defs/attempt" }, { "$ref": "#/$defs/summary" }],
+  "$defs": {
+    "sha": { "type": "string", "pattern": "^[0-9a-f]{7,64}$" },
+    "runId": { "type": "string", "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}-\\d{2}-\\d{2}Z_[0-9a-f]{6}$" },
+    "effort": { "enum": ["none", "low", "medium", "high", "max"] },
+    "provider": { "enum": ["anthropic", "openai", "google"] },
+    "nonNegInt": { "type": "integer", "minimum": 0 },
+    "usd": { "type": "number", "minimum": 0 },
+
+    "tokens": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input", "cached_input", "output", "reasoning"],
+      "properties": {
+        "input": { "$ref": "#/$defs/nonNegInt" },
+        "cached_input": { "$ref": "#/$defs/nonNegInt" },
+        "output": { "$ref": "#/$defs/nonNegInt", "description": "Billed output, including reasoning" },
+        "reasoning": { "oneOf": [{ "$ref": "#/$defs/nonNegInt" }, { "type": "null" }], "description": "Subset of output; null if the provider doesn't report it" }
+      }
+    },
+
+    "gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ok", "ms"],
+      "properties": {
+        "ok": { "type": "boolean" },
+        "skipped": { "type": "boolean" },
+        "ms": { "$ref": "#/$defs/nonNegInt" },
+        "exit_code": { "type": ["integer", "null"] },
+        "output_tail": { "type": "string", "maxLength": 20000 }
+      }
+    },
+
+    "gates": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "cargo_check": { "$ref": "#/$defs/gate" },
+        "cargo_test": { "$ref": "#/$defs/gate" },
+        "clippy": { "$ref": "#/$defs/gate" },
+        "tsc": { "$ref": "#/$defs/gate" },
+        "eslint": { "$ref": "#/$defs/gate" },
+        "vitest": { "$ref": "#/$defs/gate" },
+        "capabilities": { "$ref": "#/$defs/gate" }
+      }
+    },
+
+    "iteration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["n", "tokens", "latency_ms", "cost_usd", "stop_reason", "gates", "error_classes"],
+      "properties": {
+        "n": { "type": "integer", "minimum": 0, "description": "0 = first attempt, 1..R = retries with error feedback" },
+        "tokens": { "$ref": "#/$defs/tokens" },
+        "latency_ms": { "$ref": "#/$defs/nonNegInt" },
+        "cost_usd": { "$ref": "#/$defs/usd" },
+        "stop_reason": { "enum": ["end", "max_tokens", "refusal", "other"] },
+        "stop_reason_native": { "type": "string" },
+        "files_changed": { "type": "array", "items": { "type": "string" } },
+        "rejected_paths": { "type": "array", "items": { "type": "string" }, "description": "Edits outside the task's editable whitelist, not applied" },
+        "gates": { "$ref": "#/$defs/gates" },
+        "error_classes": { "type": "array", "items": { "type": "string" }, "description": "Compiler error codes, e.g. E0599, TS2339" }
+      }
+    },
+
+    "run": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record", "schema_version", "run_id", "started_at", "harness_commit", "suite_version",
+        "matrix_version", "matrix_hash", "price_table_version", "mode", "dry_run", "host", "caps"
+      ],
+      "properties": {
+        "record": { "const": "run" },
+        "schema_version": { "const": 1 },
+        "run_id": { "$ref": "#/$defs/runId" },
+        "started_at": { "type": "string", "format": "date-time" },
+        "harness_commit": { "$ref": "#/$defs/sha" },
+        "harness_dirty": { "type": "boolean" },
+        "suite_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+        "matrix_version": { "type": "integer", "minimum": 1 },
+        "matrix_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+        "price_table_version": { "type": "string", "pattern": "^v\\d+$" },
+        "mode": { "enum": ["matrix", "single", "only_new"] },
+        "dry_run": { "type": "boolean" },
+        "host": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["os", "node", "rustc"],
+          "properties": {
+            "os": { "type": "string" },
+            "node": { "type": "string" },
+            "rustc": { "type": "string" },
+            "ci": { "type": "boolean" }
+          }
+        },
+        "caps": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["timeout_s", "max_output_tokens", "usd_ceiling", "reps", "max_retries"],
+          "properties": {
+            "timeout_s": { "type": "integer", "minimum": 1 },
+            "max_output_tokens": { "type": "integer", "minimum": 1 },
+            "usd_ceiling": { "$ref": "#/$defs/usd" },
+            "reps": { "type": "integer", "minimum": 1 },
+            "max_retries": { "type": "integer", "minimum": 0 }
+          }
+        }
+      }
+    },
+
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record", "run_id", "attempt_id", "pair", "task", "status", "first_pass_compile", "iterations", "telemetry"],
+      "properties": {
+        "record": { "const": "attempt" },
+        "run_id": { "$ref": "#/$defs/runId" },
+        "attempt_id": { "type": "string", "pattern": "^[0-9a-f]{16}$" },
+        "pair": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["provider", "model", "effort_norm", "effort_native", "temperature_sent", "max_output_tokens"],
+          "properties": {
+            "provider": { "$ref": "#/$defs/provider" },
+            "model": { "type": "string" },
+            "effort_norm": { "$ref": "#/$defs/effort" },
+            "effort_native": {
+              "oneOf": [
+                {
+                  "type": "object",
+                  "additionalProperties": false,
+                  "required": ["param", "value"],
+                  "properties": { "param": { "type": "string" }, "value": { "type": "string" } }
+                },
+                { "type": "null", "description": "Unsupported level: nothing was sent" }
+              ]
+            },
+            "temperature_sent": { "type": ["number", "null"] },
+            "max_output_tokens": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "task": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["id", "class", "rep_index"],
+          "properties": {
+            "id": { "type": "string", "pattern": "^[A-Z]$" },
+            "class": { "enum": ["C1", "C2", "C3", "C4"] },
+            "rep_index": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "status": {
+          "enum": ["pass", "fail", "capped_timeout", "capped_tokens", "capped_usd", "refusal", "api_error", "unsupported"],
+          "description": "Capped, refused and errored attempts count as failures in every metric; they are never dropped"
+        },
+        "error": { "type": ["string", "null"] },
+        "first_pass_compile": { "type": ["boolean", "null"] },
+        "iterations": { "type": "array", "items": { "$ref": "#/$defs/iteration" } },
+        "hidden": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["passed", "total"],
+              "properties": {
+                "passed": { "$ref": "#/$defs/nonNegInt" },
+                "total": { "type": "integer", "minimum": 1 },
+                "failed_names": { "type": "array", "items": { "type": "string" } }
+              }
+            },
+            { "type": "null" }
+          ]
+        },
+        "hygiene": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "unsafe_added": { "$ref": "#/$defs/nonNegInt" },
+            "unwraps_in_ipc": { "$ref": "#/$defs/nonNegInt" },
+            "clippy_warnings": { "$ref": "#/$defs/nonNegInt" },
+            "hallucination_errors": { "$ref": "#/$defs/nonNegInt" },
+            "capability_violations": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "telemetry": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["tokens", "model_latency_ms", "wall_ms", "cost_usd"],
+          "properties": {
+            "tokens": { "$ref": "#/$defs/tokens" },
+            "model_latency_ms": { "$ref": "#/$defs/nonNegInt" },
+            "wall_ms": { "$ref": "#/$defs/nonNegInt" },
+            "cost_usd": { "$ref": "#/$defs/usd" }
+          }
+        },
+        "diff": { "type": "string", "description": "Unified diff of the final working copy vs scaffold" }
+      }
+    },
+
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["record", "run_id", "finished_at", "attempts", "cost_usd", "aborted", "abort_reason"],
+      "properties": {
+        "record": { "const": "summary" },
+        "run_id": { "$ref": "#/$defs/runId" },
+        "finished_at": { "type": "string", "format": "date-time" },
+        "attempts": { "$ref": "#/$defs/nonNegInt" },
+        "cost_usd": { "$ref": "#/$defs/usd" },
+        "aborted": { "type": "boolean" },
+        "abort_reason": { "type": ["string", "null"] }
+      }
+    }
+  }
+}

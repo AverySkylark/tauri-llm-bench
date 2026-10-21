@@ -1,0 +1,56 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://tauri-llm-bench/schema/matrix.schema.json",
+  "title": "Benchmark matrix",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "suite_version", "price_table", "defaults", "pairs"],
+  "properties": {
+    "version": { "type": "integer", "minimum": 1 },
+    "suite_version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "price_table": { "type": "string", "pattern": "^v\\d+$" },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["reps", "max_retries", "max_output_tokens", "temperature", "timeout_s", "usd_ceiling_per_run", "value_index"],
+      "properties": {
+        "reps": { "type": "integer", "minimum": 1, "maximum": 20 },
+        "max_retries": { "type": "integer", "minimum": 0, "maximum": 5 },
+        "max_output_tokens": { "type": "integer", "minimum": 256 },
+        "temperature": { "$ref": "#/$defs/temperature" },
+        "timeout_s": { "type": "integer", "minimum": 10 },
+        "usd_ceiling_per_run": { "type": "number", "exclusiveMinimum": 0 },
+        "value_index": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["latency_usd_per_hour", "min_quality", "min_pass_wilson_lower"],
+          "properties": {
+            "latency_usd_per_hour": { "type": "number", "minimum": 0 },
+            "min_quality": { "type": "number", "minimum": 0, "maximum": 1 },
+            "min_pass_wilson_lower": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        }
+      }
+    },
+    "pairs": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["provider", "model", "efforts"],
+        "properties": {
+          "provider": { "enum": ["anthropic", "openai", "google"] },
+          "model": { "type": "string", "minLength": 1, "not": { "pattern": "latest" } },
+          "efforts": { "type": "array", "minItems": 1, "uniqueItems": true, "items": { "$ref": "#/$defs/effort" } },
+          "max_output_tokens": { "type": "integer", "minimum": 256 },
+          "temperature": { "$ref": "#/$defs/temperature" }
+        }
+      }
+    }
+  },
+  "$defs": {
+    "effort": { "enum": ["none", "low", "medium", "high", "max"] },
+    "temperature": { "oneOf": [{ "const": "provider_default" }, { "type": "number", "minimum": 0, "maximum": 2 }] }
+  }
+}
