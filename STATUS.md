@@ -1,6 +1,6 @@
 # Status
 
-Updated 2026-10-21, end of Phase 5. Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
+Updated 2026-10-21, end of Phase 5 (+ mini-sweep, output cap 32k for high/max effort). Awaiting owner approval for Phase 6 (CI, Pages, RUNBOOK).
 
 ## Phases
 
@@ -61,7 +61,9 @@ Full log in `docs/DECISIONS.md`. Key ones:
 3. Back up `~/.tauri-llm-bench/hidden.key`.
 4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Phase 6 needs the answer, plus a repo name and permission to create the remote and push.
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
-6. **Output-token cap vs effort.** Anthropic counts thinking tokens against `max_output_tokens` (16,000). At high effort, Haiku hit it on task C, so high effort can be penalised for thinking, not for worse code. Option: raise the cap for high and max effort (e.g. 32,000) with a matrix version bump before the full sweep.
+6. Resolved: the 300 s fetch header timeout (now `node:https`), and mixed caps (split rows, option b).
+
+**Paused:** a rerun of `haiku@high` at the 32k cap (owner-approved, ceiling $0.50) was stopped during its first attempt; the owner chose to leave it for now. It left an untracked run file holding only its header line, `data/runs/1.0.0/2026-10-21T01-18-50Z_3f5e71.ndjson`, and a scratch copy `.bench-work/attempt-2d7e4824eb30ae2e`. Neither is committed. To resume: `bench run --live --usd-ceiling 0.5 --model claude-haiku-5-5 --effort high --reps 1` (about $0.03).
 
 ## Next step
 

@@ -15,10 +15,10 @@ An independent, repeatable benchmark of LLM model × reasoning-effort pairs on e
 
 > **Small sample:** 8 attempt(s) in total. Treat every number as an anecdote until each pair has 3+ reps per task.
 
-| # | Pair | Provider | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `claude-haiku-5-5@low` | anthropic | 4 | 100 % (51 %) | 75 % | 0.99 | $0.0042 | 0.66 | 236 | 1.49 | Pareto |
-| – | `claude-haiku-5-5@high` | anthropic | 4 | 75 % (30 %) | 100 % | 0.75 | $0.0073 | 1.04 | 103 | 0.71 | below bar: pass-rate bound < 0.4; no measurable gain over @low (ΔQ -0.24, 95 % CI -0.74 to +0.03) at 1.7× the cost |
+| # | Pair | Provider | Output cap | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | `claude-haiku-5-5@low` | anthropic | 16k | 4 | 100 % (51 %) | 75 % | 0.99 | $0.0042 | 0.66 | 236 | 1.49 | Pareto |
+| – | `claude-haiku-5-5@high` | anthropic | 16k | 4 | 75 % (30 %) | 100 % | 0.75 | $0.0073 | 1.04 | 103 | 0.71 | below bar: pass-rate bound < 0.4; no measurable gain over @low (ΔQ -0.24, 95 % CI -0.74 to +0.03) at 1.7× the cost |
 
 Full tables: [reports/LEADERBOARD.md](reports/LEADERBOARD.md) · routing: [reports/routing.md](reports/routing.md) · charts: [reports/index.html](reports/index.html)
 <!-- leaderboard:end -->

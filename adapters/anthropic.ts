@@ -1,7 +1,7 @@
 // Anthropic Messages API (POST /v1/messages), raw HTTP so the exact request is recorded.
 
 import { mapEffort, mergeBody } from './effort.ts';
-import { num, postJson } from './http.ts';
+import { num, postJson, nodeTransport } from './http.ts';
 import { AdapterError, type Adapter, type ChatRequest, type ChatResponse, type StopReason, type Transport } from './types.ts';
 
 const URL = 'https://api.anthropic.com/v1/messages';
@@ -51,7 +51,7 @@ export function parseAnthropic(json: unknown): Omit<ChatResponse, 'latencyMs' | 
   };
 }
 
-export function anthropicAdapter(apiKey: string, transport: Transport = fetch): Adapter {
+export function anthropicAdapter(apiKey: string, transport: Transport = nodeTransport): Adapter {
   return {
     provider: 'anthropic',
     async chat(req) {

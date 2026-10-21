@@ -1,7 +1,7 @@
 // Gemini API generateContent (REST), raw HTTP.
 
 import { mapEffort, mergeBody } from './effort.ts';
-import { num, postJson } from './http.ts';
+import { num, postJson, nodeTransport } from './http.ts';
 import { AdapterError, type Adapter, type ChatRequest, type ChatResponse, type StopReason, type Transport } from './types.ts';
 
 const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
@@ -69,7 +69,7 @@ export function parseGoogle(json: unknown): Omit<ChatResponse, 'latencyMs' | 'ef
   };
 }
 
-export function googleAdapter(apiKey: string, transport: Transport = fetch): Adapter {
+export function googleAdapter(apiKey: string, transport: Transport = nodeTransport): Adapter {
   return {
     provider: 'google',
     async chat(req) {

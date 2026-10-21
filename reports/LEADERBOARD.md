@@ -16,10 +16,10 @@ Value Index bar: Q ≥ 0.6 and pass-rate Wilson lower bound ≥ 0.4. λ = $60/h.
 
 Ranked by VI among pairs that meet the bar; the rest follow by quality, unranked.
 
-| # | Pair | Provider | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| 1 | `claude-haiku-5-5@low` | anthropic | 4 | 100 % (51 %) | 75 % | 0.99 | $0.0042 | 0.66 | 236 | 1.49 | Pareto |
-| – | `claude-haiku-5-5@high` | anthropic | 4 | 75 % (30 %) | 100 % | 0.75 | $0.0073 | 1.04 | 103 | 0.71 | below bar: pass-rate bound < 0.4; no measurable gain over @low (ΔQ -0.24, 95 % CI -0.74 to +0.03) at 1.7× the cost |
+| # | Pair | Provider | Output cap | Attempts | Pass rate (Wilson lo) | 1st-pass compile | Q | $ / attempt | min / attempt | VI (Q per $) | VI_t | Notes |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | `claude-haiku-5-5@low` | anthropic | 16k | 4 | 100 % (51 %) | 75 % | 0.99 | $0.0042 | 0.66 | 236 | 1.49 | Pareto |
+| – | `claude-haiku-5-5@high` | anthropic | 16k | 4 | 75 % (30 %) | 100 % | 0.75 | $0.0073 | 1.04 | 103 | 0.71 | below bar: pass-rate bound < 0.4; no measurable gain over @low (ΔQ -0.24, 95 % CI -0.74 to +0.03) at 1.7× the cost |
 
 ## Per task
 

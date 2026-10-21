@@ -10,6 +10,7 @@ export interface MatrixDefaults {
   reps: number;
   max_retries: number;
   max_output_tokens: number;
+  max_output_tokens_by_effort?: Partial<Record<Effort, number>>;
   temperature: number | 'provider_default';
   timeout_s: number;
   usd_ceiling_per_run: number;
@@ -64,13 +65,18 @@ export function loadMatrix(path: string): LoadedMatrix {
       provider: p.provider,
       model: p.model,
       effort,
-      maxOutputTokens: p.max_output_tokens ?? matrix.defaults.max_output_tokens,
+      maxOutputTokens: outputCap(matrix.defaults, p.max_output_tokens, effort),
       temperature: p.temperature ?? matrix.defaults.temperature,
       supported: isSupported(p.provider, p.model, effort),
     })),
   );
 
   return { matrix, hash: hashMatrix(matrix), prices, pairs };
+}
+
+// A pair's own cap (a model limit) wins, then the per-effort default, then the global default.
+export function outputCap(d: MatrixDefaults, pairCap: number | undefined, effort: Effort): number {
+  return pairCap ?? d.max_output_tokens_by_effort?.[effort] ?? d.max_output_tokens;
 }
 
 // Hash of the parsed content with sorted keys, so comments and formatting don't change it.
