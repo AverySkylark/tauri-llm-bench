@@ -119,3 +119,7 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Workflow inputs are passed through `env`, never pasted into scripts.** Why: `${{ inputs.x }}` inside `run:` is shell injection. The ceiling, task list and reps are also checked by pattern before anything runs.
 
 **Full-sweep estimate uses the 8 Haiku attempts; Gemini is inferred.** No Gemini attempt has run yet, so its cost is Haiku's mean token counts at Gemini prices, labelled as rough in the runbook.
+
+**Hidden-test leak: accepted and watched, not fixed.** Owner's choice ("Accept and watch"), 2026-10-22. Decrypted hidden tests stay in `hidden/plain/` during runs; gate code could read them and leak them into retry feedback. Alternative: decrypt only after the last turn. Owner chose to watch run files for hidden-test content in `output_tail` instead (RUNBOOK §4).
+
+**Repo is public on GitHub as `tauri-llm-bench`.** Owner's choice. Why: free-account Pages needs a public repo. Hidden tests stay encrypted in `hidden/tasks.enc`. History was checked for keys and personal paths before the first push.

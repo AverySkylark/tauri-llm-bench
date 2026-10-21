@@ -81,8 +81,8 @@ Full log in `docs/DECISIONS.md`. Key ones:
 1. **Task A may be too easy.** Claude Haiku 5.5 at low effort passed all 23 hidden tests on its first try. The sweep will show whether every pair aces it; if so, harden A in suite 1.1.0.
 2. ESLint: stay a pass/fail gate (current), or become a hygiene metric only?
 3. Back up `~/.tauri-llm-bench/hidden.key`.
-4. **Public repo?** GitHub Pages on a free account needs a public repo. Hidden tests stay encrypted either way. Needed now: public or private, a repo name, and permission to create the remote and push. Then add the secrets and set Pages' source to GitHub Actions (RUNBOOK §1).
-7. **Known gap:** decrypted hidden tests sit in `hidden/plain/` during a run, where gate code could read them and leak them into retry feedback. Fix: decrypt only after the last turn. Do it before the full sweep, or accept and watch for it?
+4. Resolved: public repo `tauri-llm-bench` (owner, 2026-10-22). Owner still adds secrets and sets Pages source (RUNBOOK §1).
+7. Resolved: hidden-test leak accepted and watched (owner, 2026-10-22); RUNBOOK §4 says what to look for.
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
 6. Resolved: the 300 s fetch header timeout (now `node:https`), and mixed caps (split rows, option b).
 
