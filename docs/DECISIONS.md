@@ -53,3 +53,27 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Hidden-test key lives at `~/.tauri-llm-bench/hidden.key` (or `BENCH_HIDDEN_KEY`).** Alternative: owner supplies a key. Why: needed to encrypt now; outside the repo; the owner must back it up and add it as a CI secret.
 
 **Suite version 1.0.0.**
+
+## 2026-10-21 — Phase 3
+
+**Tasks approved as they stand.** Owner said "go" to Phase 3 without bias-review comments, so suite 1.0.0 is unchanged. (Approval inferred from "go".) ESLint stays a pass/fail gate for now. Every gate result is stored separately, so reports can also show pass rate without ESLint, with no rerun.
+
+**Reply format: line markers, not code fences.** Chose `=== FILE: path ===` … `=== END FILE ===` and `=== DELETE: path ===`. Alternative: Markdown fences with a path label. Why: a file can contain fences, and fence label styles vary by model. A fence wrapped around a whole file body is stripped (a habit of every provider). A block missing its END line is dropped, never applied half-written, and the model is told.
+
+**Pass = every visible gate passes.** Hidden tests are scored separately (passed/total) after the last turn, also for failed or capped attempts. The Value Index rules (PLAN §6) decide how those count. Hidden tests are copied into the working copy only after the model's final reply.
+
+**Output-token cap hit = `capped_tokens`, and the reply is not applied.** Alternative: apply the complete blocks and continue. Why: SPEC says capped runs are failures; a truncated reply is usually missing files.
+
+**Timeout counts model time only.** Gate time depends on the machine, not the model, and each gate has its own 5-minute limit. A provider timeout is `capped_timeout` and is not retried.
+
+**Dollar ceiling is checked before every request against its worst case** (prompt chars ÷ 3 as input tokens + the full output cap), so a run stops short of the ceiling instead of crossing it. If the ceiling blocks an attempt before it sends anything, no attempt record is written (it never started) and `--only-new` picks it up later. If it blocks a retry mid-attempt, the attempt is recorded as `capped_usd`, a failure.
+
+**Transient API errors (429, 5xx, dropped connection) retry up to 3 times (2 s, 10 s, 30 s).** These retries are not counted against R, which is only for the model fixing its own errors. Other 4xx errors are `api_error`.
+
+**Spending needs `--live` and an explicit `--usd-ceiling`.** Alternative: live by default with the matrix ceiling. Why: the owner's rule is no spend without a confirmed ceiling. Dry runs write to `.bench-work/dry-runs/` (gitignored) so they never mix with real data in `data/runs/`.
+
+**`--only-new` treats any recorded attempt as done, including failures.** Dry and live runs are kept apart. The plan runs reps outermost, so a run stopped early leaves an even sample across pairs.
+
+**Attempts run one after another.** Alternative: run model calls in parallel. Why: all gates share one cargo target dir. Model calls could overlap later if sweep time matters.
+
+**Gate errors fed back are trimmed.** At most 6000 characters per failing gate and 24 000 in total, keeping the end of the output, with working-copy paths replaced by `.`.
