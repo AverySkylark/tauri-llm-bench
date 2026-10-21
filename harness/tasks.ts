@@ -83,7 +83,7 @@ export function materialize(task: Task, dest: string, overlays: string[] = []): 
   return dest;
 }
 
-function touchTree(dir: string, when: Date): void {
+export function touchTree(dir: string, when: Date): void {
   for (const e of readdirSync(dir, { withFileTypes: true })) {
     const p = join(dir, e.name);
     if (e.isDirectory()) touchTree(p, when);
