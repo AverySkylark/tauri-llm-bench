@@ -1,0 +1,12 @@
+id: C
+title: Field survey - untyped frontend IPC calls to strictly validated TS boundaries
+class: C2
+kind: refactor
+editable:
+  - src/**
+readonly:
+  - src/__tests__/**
+gates: [cargo_check, cargo_test, tsc, eslint, vitest]
+hidden:
+  rust_tests: []
+  vitest_dir: src/__hidden__

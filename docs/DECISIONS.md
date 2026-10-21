@@ -35,3 +35,21 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Anthropic reasoning tokens recorded as null.** Why: the Messages API bills thinking inside `output_tokens` and doesn't break it out; cost is still exact.
 
 **Dry-run uses fake transports behind the real adapters.** Alternative: a separate fake adapter. Why: the real request builders and response parsers run in dry-run, so it tests what a live run will do.
+
+## 2026-10-21 — Phase 2
+
+**Tauri mock runtime for gates.** Chose `tauri` with `default-features = false, features = ["test"]`. Alternative: full Tauri build with WebView (webkit2gtk / WebView2). Why: no WebView system dependency, cold build 41 s and ~1 s warm, while still exercising real IPC deserialisation, ACL, events and channels. Verified by probe before committing to it.
+
+**One shared Cargo.lock, crate name and target dir for all tasks.** Alternative: a lock and target dir per task. Why: dependencies compile once; each attempt only rebuilds the task crate. Gates run `--offline --locked`, so a model can't pull in crates.
+
+**Materialised files get a fresh mtime.** Why: on Windows, copies keep the source mtime, and cargo reused stale test binaries from an earlier working copy at the same path (the scaffold "passed" cargo test). Found during Task A verification.
+
+**ESLint preset `recommendedTypeChecked`, not `strictTypeChecked`.** Alternative: strict. Why: strict flags idiomatic React (`onChange={(e) => setX(e.target.value)}`) and deprecated-type notices, which measures style, not correctness, and the scaffolds themselves use the pattern. `no-explicit-any` stays an error.
+
+**B's listeners moved to a public `listen_for_readings(&AppHandle)`.** Why: Tauri runs `setup` only when the event loop starts, which the mock app never does in tests.
+
+**D's data path is tested by calling `stream_scan_file` directly.** Why: a `Channel` passed through mock IPC sends to the mock webview, where nothing can observe it. The command's error contract and registration are still tested through IPC.
+
+**Hidden-test key lives at `~/.tauri-llm-bench/hidden.key` (or `BENCH_HIDDEN_KEY`).** Alternative: owner supplies a key. Why: needed to encrypt now; outside the repo; the owner must back it up and add it as a CI secret.
+
+**Suite version 1.0.0.**
