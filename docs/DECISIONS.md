@@ -77,3 +77,9 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 **Attempts run one after another.** Alternative: run model calls in parallel. Why: all gates share one cargo target dir. Model calls could overlap later if sweep time matters.
 
 **Gate errors fed back are trimmed.** At most 6000 characters per failing gate and 24 000 in total, keeping the end of the output, with working-copy paths replaced by `.`.
+
+## 2026-10-21 — Phase 4
+
+**API key lives in the owner's Windows user environment, set by the owner outside Claude Code.** Alternative: paste it into the chat, or keep a `.env` file. Why: anything pasted into the chat stays in the transcript, and PROMPT.md forbids keys in files. Claude Code's own process predates the variable, so each live command copies it from the user scope into that one process (`$env:X = [Environment]::GetEnvironmentVariable('X','User')`). The key is never printed.
+
+**Smoke result: committed as real data.** The run file `data/runs/1.0.0/2026-10-21T00-51-21Z_bbde84.ndjson` is the first live record. It's kept, not discarded as a test, because SPEC says runs are append-only results.
