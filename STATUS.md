@@ -15,7 +15,7 @@ Updated 2026-10-22, end of Phase 6 (CI, Pages, RUNBOOK). Awaiting owner approval
 | 6 CI, Pages, RUNBOOK | done locally, **awaiting approval**; workflows not yet run (no remote) | `phase-6-ci` |
 | 7 Full sweep | not started | |
 
-Branches are stacked (each phase branches from the previous one). Remote: https://github.com/AverySkylark/tauri-llm-bench (public). Stacked PRs #3–#10 are open (phase 0 → main, each later one on the previous branch); merge in order. Head branches are deleted on merge, so each next PR retargets automatically. Bug issues: #1 (300 s header timeout, fixed in #10), #2 (gate env leak, fixed on `phase-6-ci`).
+Branches are stacked (each phase branches from the previous one). Remote: https://github.com/AverySkylark/tauri-llm-bench (public). Stacked PRs #3–#10 are open (phase 0 → main, each later one on the previous branch); merge in order. Head branches are deleted on merge, so each next PR retargets automatically. Phase 6 is PR #11 (base `cap-32k-high-effort`). Bug issues: #1 (300 s header timeout, fixed in #10), #2 (gate env leak, fixed in #11), #12 (unit tests needed the real hidden tests, fixed in #11).
 
 ## Phase 4 result (live smoke)
 
@@ -90,10 +90,14 @@ Full log in `docs/DECISIONS.md`. Key ones:
 
 ## Next step
 
-1. **Blocked on the owner:** the `gh` token lacks the `workflow` scope, so `phase-6-ci` (which adds `.github/workflows/`) was rejected. Owner runs `gh auth refresh -h github.com -s workflow`. Then push `phase-6-ci` (HTTPS with `gh` as credential helper; the SSH host key isn't set up in Claude Code's shell) and open its PR on base `cap-32k-high-effort` with "Fixes #2".
-2. Owner adds secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`), sets Pages source to GitHub Actions, and merges PRs #3 onwards in order.
-3. Watch the first `ci.yml` and `pages.yml` runs and fix what breaks. Measure CI setup time cold and warm; add it to RUNBOOK §3.
+CI on PR #11: unit tests pass on Ubuntu and Windows. `verify-tasks` fails only because the `BENCH_HIDDEN_KEY` secret isn't set.
+
+1. **Owner:** add secrets (`BENCH_HIDDEN_KEY`, `BENCH_ANTHROPIC_API_KEY`, optionally `BENCH_GOOGLE_API_KEY`), set Pages source to GitHub Actions, then re-run CI on #11.
+2. Fix whatever `verify-tasks` hits on Linux (first real run of the Tauri build there; `ubuntu-latest` is moving to Ubuntu 26, so apt package names may need a check). Measure CI setup time cold and warm; add it to RUNBOOK §3.
+3. Owner merges PRs #3 → #11 in order. The first push to `main` runs `pages.yml`.
 4. Phase 7 (full sweep) only when the owner says so, with their ceiling. The paused `haiku@high` 32k rerun is covered by `--only-new`.
+
+Pushing from Claude Code's shell: SSH host key isn't set up, so push over HTTPS with `git -c credential.helper= -c 'credential.helper=!gh auth git-credential' push`. The `gh` token now has the `workflow` scope.
 
 ## How to resume
 
