@@ -44,7 +44,7 @@ describe('effort normalisation', () => {
 
   it('the starter matrix only contains supported pairs', () => {
     const { pairs } = loadMatrix(repoPath('matrix', 'matrix.yaml'));
-    expect(pairs).toHaveLength(4);
+    expect(pairs).toHaveLength(7);
     expect(pairs.every((p) => p.supported)).toBe(true);
   });
 });

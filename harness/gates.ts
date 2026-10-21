@@ -29,8 +29,12 @@ export const GATE_COMMANDS: Record<GateName, string[]> = {
   vitest: [...nodeBin('vitest/vitest.mjs'), 'run'],
 };
 
-export function gateEnv(): NodeJS.ProcessEnv {
-  return { ...process.env, CARGO_TARGET_DIR, CARGO_TERM_COLOR: 'never', NO_COLOR: '1', FORCE_COLOR: '0', RUST_BACKTRACE: '0' };
+// Gates run model-written code (tests, build scripts), so it never sees API keys, the hidden-test key or CI tokens.
+const SECRET_ENV = /^BENCH_|^ACTIONS_|API_KEY|TOKEN|SECRET|PASSWORD|CREDENTIAL/i;
+
+export function gateEnv(env: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
+  const kept = Object.fromEntries(Object.entries(env).filter(([k]) => !SECRET_ENV.test(k)));
+  return { ...kept, CARGO_TARGET_DIR, CARGO_TERM_COLOR: 'never', NO_COLOR: '1', FORCE_COLOR: '0', RUST_BACKTRACE: '0' };
 }
 
 export function run(cmd: string[], cwd: string, timeoutMs: number): Promise<GateResult & { output: string }> {

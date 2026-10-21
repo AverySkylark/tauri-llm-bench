@@ -14,8 +14,9 @@ const MAGIC = Buffer.from('TLBH1');
 export const BUNDLE = repoPath('hidden', 'tasks.enc');
 export const PLAIN = repoPath('hidden', 'plain');
 
+// BENCH_HIDDEN_DIR points unit tests at a fixture, so they never need the real hidden tests or key.
 export function hiddenDir(): string {
-  return PLAIN;
+  return process.env.BENCH_HIDDEN_DIR || PLAIN;
 }
 
 export function defaultKeyFile(): string {
@@ -46,7 +47,7 @@ function walk(dir: string): string[] {
   });
 }
 
-export function encrypt(key = loadKey(), src = PLAIN, out = BUNDLE): { files: number; bytes: number } {
+export function encrypt(key = loadKey(), src = hiddenDir(), out = BUNDLE): { files: number; bytes: number } {
   const files: Record<string, string> = {};
   for (const f of walk(src).sort()) files[relative(src, f).replace(/\\/g, '/')] = readFileSync(f).toString('base64');
   const plain = gzipSync(Buffer.from(JSON.stringify(files)));
@@ -58,7 +59,7 @@ export function encrypt(key = loadKey(), src = PLAIN, out = BUNDLE): { files: nu
   return { files: Object.keys(files).length, bytes: bundle.length };
 }
 
-export function decrypt(dest = PLAIN, key = loadKey(), bundle = BUNDLE): number {
+export function decrypt(dest = hiddenDir(), key = loadKey(), bundle = BUNDLE): number {
   const buf = readFileSync(bundle);
   if (!buf.subarray(0, MAGIC.length).equals(MAGIC)) throw new Error('hidden/tasks.enc: bad header');
   const iv = buf.subarray(5, 17);

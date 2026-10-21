@@ -1,0 +1,65 @@
+# Unit tests on both platforms, and task verification on Linux. Never calls a model API.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            tasks/_shared/frontend/package-lock.json
+      - run: npm ci --no-audit --no-fund
+      - name: Shared task frontend install
+        working-directory: tasks/_shared/frontend
+        run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm test
+      - name: Validate matrix
+        run: npm run bench -- matrix
+
+  # Scaffolds must fail the gates; references must pass gates and hidden tests. Proves the Linux gate path
+  # the sweep uses. Needs BENCH_HIDDEN_KEY, so it is skipped on pull requests from forks, and its steps are
+  # skipped (job stays green, with a warning) while the secret is not set. Sweep and Pages still fail loudly.
+  verify-tasks:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      HAVE_KEY: ${{ secrets.BENCH_HIDDEN_KEY != '' }}
+    steps:
+      - name: Skip notice
+        if: env.HAVE_KEY != 'true'
+        run: echo "::warning::BENCH_HIDDEN_KEY secret is not set; task verification skipped."
+      - uses: actions/checkout@v5
+        if: env.HAVE_KEY == 'true'
+      - uses: ./.github/actions/setup-bench
+        if: env.HAVE_KEY == 'true'
+        with:
+          hidden-key: ${{ secrets.BENCH_HIDDEN_KEY }}
+      - run: npm run bench -- tasks verify
+        if: env.HAVE_KEY == 'true'
+      - name: Dry run, no API calls
+        if: env.HAVE_KEY == 'true'
+        run: npm run bench -- run --model claude-haiku-5-5 --effort low --task A --dry-run --reps 1

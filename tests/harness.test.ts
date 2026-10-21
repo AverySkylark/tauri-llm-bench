@@ -7,6 +7,7 @@ import { canonicalJson, hashMatrix, loadMatrix, type Matrix } from '../harness/m
 import { repoPath } from '../harness/paths.ts';
 import { costUsd, loadPrices, priceFor } from '../harness/prices.ts';
 import { validator } from '../harness/schema.ts';
+import { gateEnv } from '../harness/gates.ts';
 
 describe('API keys', () => {
   it('reads only BENCH_* variables, never plain ANTHROPIC_API_KEY', () => {
@@ -25,6 +26,17 @@ describe('API keys', () => {
         expect(src, `${dir}/${f}`).not.toMatch(/process\.env(\.|\[['"`])(?!BENCH_)\w*API_KEY/);
       }
     }
+  });
+
+  it('gates never see keys or tokens', () => {
+    const env = gateEnv({
+      PATH: '/usr/bin', HOME: '/home/x', CARGO_HOME: '/c',
+      BENCH_ANTHROPIC_API_KEY: 'a', BENCH_HIDDEN_KEY: 'h', ANTHROPIC_API_KEY: 'c',
+      GITHUB_TOKEN: 't', ACTIONS_RUNTIME_TOKEN: 'r', NPM_TOKEN: 'n', AWS_SECRET_ACCESS_KEY: 's',
+    });
+    expect(Object.keys(env).sort()).toEqual(
+      ['CARGO_HOME', 'CARGO_TARGET_DIR', 'CARGO_TERM_COLOR', 'FORCE_COLOR', 'HOME', 'NO_COLOR', 'PATH', 'RUST_BACKTRACE'],
+    );
   });
 });
 
@@ -72,7 +84,7 @@ describe('matrix', () => {
   }
 
   it('rejects floating aliases', () => {
-    const f = writeVariant((s) => s.replace('model: gemini-3.5-flash-lite', 'model: gemini-flash-latest'));
+    const f = writeVariant((s) => s.replace('model: claude-sonnet-5-5', 'model: claude-sonnet-latest'));
     expect(() => loadMatrix(f)).toThrow(/matrix\.schema\.json/);
   });
 
@@ -82,8 +94,8 @@ describe('matrix', () => {
   });
 
   it('rejects provider mismatches', () => {
-    const f = writeVariant((s) => s.replace('provider: google', 'provider: openai'));
-    expect(() => loadMatrix(f)).toThrow(/price table says google/);
+    const f = writeVariant((s) => s.replace('provider: anthropic', 'provider: openai'));
+    expect(() => loadMatrix(f)).toThrow(/price table says anthropic/);
   });
 });
 
