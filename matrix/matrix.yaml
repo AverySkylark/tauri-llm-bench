@@ -1,5 +1,5 @@
 # Benchmark matrix. Bump `version` on any change; the run record stores a hash of this file's content.
-version: 2
+version: 3
 suite_version: 1.0.0
 price_table: v1
 defaults:
@@ -17,11 +17,11 @@ defaults:
     min_quality: 0.6
     min_pass_wilson_lower: 0.4
 
-# Phase 1 starter: 2 cheap models x 2 efforts.
+# Local model/effort choice for the owner's coding: Haiku at two efforts, Sonnet at every effort.
 pairs:
   - provider: anthropic
     model: claude-haiku-5-5
     efforts: [low, high]
-  - provider: google
-    model: gemini-3.5-flash-lite
-    efforts: [low, high]
+  - provider: anthropic
+    model: claude-sonnet-5-5
+    efforts: [none, low, medium, high, max]

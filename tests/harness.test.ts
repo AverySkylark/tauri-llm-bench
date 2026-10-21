@@ -84,7 +84,7 @@ describe('matrix', () => {
   }
 
   it('rejects floating aliases', () => {
-    const f = writeVariant((s) => s.replace('model: gemini-3.5-flash-lite', 'model: gemini-flash-latest'));
+    const f = writeVariant((s) => s.replace('model: claude-sonnet-5-5', 'model: claude-sonnet-latest'));
     expect(() => loadMatrix(f)).toThrow(/matrix\.schema\.json/);
   });
 
@@ -94,8 +94,8 @@ describe('matrix', () => {
   });
 
   it('rejects provider mismatches', () => {
-    const f = writeVariant((s) => s.replace('provider: google', 'provider: openai'));
-    expect(() => loadMatrix(f)).toThrow(/price table says google/);
+    const f = writeVariant((s) => s.replace('provider: anthropic', 'provider: openai'));
+    expect(() => loadMatrix(f)).toThrow(/price table says anthropic/);
   });
 });
 

@@ -127,3 +127,7 @@ Format: **Chose / Alternative / Why**. Reasons not witnessed from the owner are 
 ## 2026-10-22 — CI without secrets
 
 **`verify-tasks` in `ci.yml` skips its steps (job green, with a warning) while `BENCH_HIDDEN_KEY` is unset.** Owner's choice, because the failure emails from PR #11 were noise until the secret is added. Alternative: leave it red as a reminder. Scope is `ci.yml` only; `sweep.yml` and `pages.yml` still fail loudly, since a silent skip there would hide a missing key before a paid run. Cost: a green check on a PR without the secret means the Linux gate path was not exercised (the warning says so). Secrets can't be read in a job-level `if`, so the job copies a boolean into `env.HAVE_KEY` and each step checks it.
+
+## 2026-10-22 — Matrix v3: Haiku + Sonnet, no Gemini
+
+**Matrix v3 drops Gemini 3.5 Flash-Lite and adds Claude Sonnet 5.5 at every effort (none, low, medium, high, max).** Owner's choice: the bench exists to pick a model and effort for their own coding, and they use Claude, not Gemini. Haiku stays at low and high. Alternative: also remove the Google adapter, prices and tests. Rejected for now: nothing else needs them gone, and removing tested code is churn; Gemini can come back by adding a matrix pair. Sonnet `none` means `thinking: between_tools` with effort low (effort rule from the claude-api skill, cached 2026-10-06). Three unit tests that assumed the Gemini pair were repointed at Anthropic. Earlier Haiku attempts keep their matrix-v2 hash.
