@@ -63,6 +63,8 @@ Full log in `docs/DECISIONS.md`. Key ones:
 5. Still unanswered from Phase 0: judge setup and λ. Defaults are in use.
 6. Resolved: the 300 s fetch header timeout (now `node:https`), and mixed caps (split rows, option b).
 
+**Paused:** a rerun of `haiku@high` at the 32k cap (owner-approved, ceiling $0.50) was stopped during its first attempt; the owner chose to leave it for now. It left an untracked run file holding only its header line, `data/runs/1.0.0/2026-10-21T01-18-50Z_3f5e71.ndjson`, and a scratch copy `.bench-work/attempt-2d7e4824eb30ae2e`. Neither is committed. To resume: `bench run --live --usd-ceiling 0.5 --model claude-haiku-5-5 --effort high --reps 1` (about $0.03).
+
 ## Next step
 
 After the owner says "go" (and answers question 4): **Phase 6**:
