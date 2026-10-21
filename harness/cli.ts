@@ -10,6 +10,7 @@ import { decrypt, encrypt, keygen } from './hidden.ts';
 import { listTasks } from './tasks.ts';
 import { prepare, verifyTask } from './verify.ts';
 import { runCommand } from './orchestrator/cli-run.ts';
+import { reportCommand } from './report/index.ts';
 
 const USAGE = `Usage:
   bench run --matrix matrix/matrix.yaml (--dry-run | --live --usd-ceiling <USD>) [options]
@@ -17,6 +18,8 @@ const USAGE = `Usage:
   bench run --only-new (--dry-run | --live --usd-ceiling <USD>)
       options: --task A,B  --reps N  --max-retries R  --keep-work  --out <dir>
                --dry-reply reference|empty|fix-on-retry   (dry run only; default fix-on-retry)
+  bench report [--dry] [--suite 1.0.0] [--cross-suite] [--out dir]   LEADERBOARD.md, routing.md, index.html, README block
+  bench report diff --base <model@effort> --target <model@effort> [--dry]
   bench matrix [--matrix matrix/matrix.yaml]     Validate the matrix and list expanded pairs
   bench adapters --dry-run [--matrix ...]        Send one fake request per pair through each adapter (no network)
   bench tasks list                               List tasks
@@ -27,6 +30,7 @@ const USAGE = `Usage:
 async function main(argv: string[]): Promise<number> {
   const [cmd, ...rest] = argv;
   if (cmd === 'run') return runCommand(rest);
+  if (cmd === 'report') return reportCommand(rest);
   const { values } = parseArgs({
     args: rest,
     allowPositionals: true,
